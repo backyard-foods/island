@@ -1,26 +1,9 @@
-# A Simple Server with Python Flask
+# Local dev
+- Install [Balena CLI](https://docs.balena.io/learn/getting-started/raspberrypi4-64/nodejs/)
+- Turn on `Local mode` in the [Balena dashboard](https://dashboard.balena-cloud.com/devices)
+- Run `balena scan` to scan for devices
+- Run `balena push <address>` to push to device and start [live reloads](https://docs.balena.io/learn/develop/local-mode/) 
 
-[![balena deploy button](https://www.balena.io/deploy.svg)](https://dashboard.balena-cloud.com/deploy?repoUrl=https://github.com/balena-io-examples/balena-python-hello-world)
-
-This is a simple skeleton python server project that works on any of the [devices supported][devices-supported] by [balena][balena-link].
-
-This project serves up a welcome page on port `:80` of your balena device.
-
-To get this project up and running, you will need to [sign-up][signup-page] for a balena account. Have a look at our [Getting Started tutorial][gettingStarted-link] to help you kickstart your journey in creating a fleet of devices. Once you are set up with balena, you will need to clone or download this repository. 
-
-After downloading, navigate to the directory and run the `balena push` command using the [balena CLI][balena-cli]. This command will package up and push the code to the balena builders, where it will be compiled, built and deployed to every device in the fleet. When it completes, you'll have a python powered web server running on your device and you can see some logs on your [device dashboard][balena-dashboard].
-
-```bash
-cd balena-python-hello-world/
-balena push <FLEET_NAME>
-```
-
-To give your device a public URL, access the device page on the [balenaCloud dashboard][balena-dashboard], and choose the _Public Device URL_ toggle. Once the device is updated, check the Public Device URL to find the welcome page showing up from your device. That's it, you have deployed your first balena device!
-
-
-[balena-cli]:https://www.balena.io/docs/reference/cli/
-[balena-dashboard]:https://dashboard.balena-cloud.com/
-[balena-link]:https://balena.io/ 
-[devices-supported]:https://www.balena.io/docs/reference/hardware/devices/
-[gettingStarted-link]:https://www.balena.io/docs/learn/getting-started/raspberrypi3/python/
-[signup-page]:https://dashboard.balena-cloud.com/signup
+# Pushing to fleet
+- Get fleet name: `balena fleets`
+- Push to fleet: `balena push <fleet-name>`

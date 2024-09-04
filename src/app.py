@@ -5,5 +5,9 @@ app = Flask(__name__, template_folder='../views', static_folder='../views/public
 def hello_world():
     return render_template('index.html')
 
+@app.route('/print')
+def print():
+    return "print"
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=80)
