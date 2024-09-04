@@ -1,5 +1,6 @@
 import time
 from escpos.printer import Usb
+from escpos.exceptions import DeviceNotFoundError
 
 class PrinterManager:
     def __init__(self):
@@ -9,13 +10,14 @@ class PrinterManager:
         self.status = "Unknown"
         self.last_log = ""
         self.poll_interval = 5
-        self.printer = None
+        self.printer = Usb(idVendor=self.make, idProduct=self.model, usb_args={}, timeout=self.poll_interval)
 
     def get_status(self):
         return self.status
 
     def print(self, order, sku):
         self.check_status()
+        self.printer.open()
         if self.status != "ready":
             return False
         try:
@@ -44,13 +46,15 @@ class PrinterManager:
         finally:
             self.printer.close()
 
+    # TODO: Handle other exception types in https://python-escpos.readthedocs.io/en/latest/api/exceptions.html#exceptions
+    # TODO: Clean up logic for determining printer status
     def check_status(self):
         try:
-            print("Checking status")
+            print(f"Checking status, last status: {self.status}")
             prev_status = self.status
+            
+            self.printer.open()
 
-            # TODO: ADD TIMEOUT
-            self.printer = Usb(self.make, self.model, 0, self.profile)
             online_status = self.printer.is_online()
             paper_status = self.printer.paper_status()
 
@@ -68,9 +72,15 @@ class PrinterManager:
             if prev_status != self.status:
                 self.last_log = f"Printer status changed to: {self.status}"
                 print(self.last_log)
+        except DeviceNotFoundError as e:
+            self.status = "offline"
+            self.last_log = f"Printer not found: {str(e)}"
+            print(self.last_log)
         except Exception as e:
             self.last_log = f"Status check error: {str(e)}"
             print(self.last_log)
+        finally:
+            self.printer.close()
 
     def start_status_checking(self):
         while True:

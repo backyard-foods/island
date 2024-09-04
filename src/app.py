@@ -9,18 +9,18 @@ printer_manager = PrinterManager()
 def hello_world():
     return render_template('index.html')
 
-@app.route('/printer/status')
+@app.route('/receipt/status')
 def get_printer_status():
     return jsonify({"status": printer_manager.get_status()})
 
-@app.route('/printer/print', methods=['POST'])
+@app.route('/receipt/print', methods=['POST'])
 def trigger_print_job():
     data = request.json
     # Assume the print data is sent in the request body
     success = printer_manager.print(data.get('content', ''))
     return jsonify({"success": success})
 
-@app.route('/print')
+@app.route('/test')
 def print():
     return "printing!"
 
