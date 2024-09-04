@@ -3,8 +3,8 @@ from escpos.printer import Usb
 
 class PrinterManager:
     def __init__(self):
-        self.make = 0x1234
-        self.model = 0x5678
+        self.make = 0x04b8
+        self.model = 0x0202
         self.profile = "TM-T88IV"
         self.status = "Unknown"
         self.last_log = ""
