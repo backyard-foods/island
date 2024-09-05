@@ -1,9 +1,9 @@
 from flask import Flask, render_template, jsonify, request
-from printer_manager import PrinterManager
+from receipt_printer_manager import ReceiptPrinterManager
 import threading
 
 app = Flask(__name__, template_folder='../views', static_folder='../views/public')
-printer_manager = PrinterManager()
+receipt_printer_manager = ReceiptPrinterManager()
 
 @app.route('/')
 def hello_world():
@@ -11,13 +11,12 @@ def hello_world():
 
 @app.route('/receipt/status')
 def get_printer_status():
-    return jsonify({"status": printer_manager.get_status()})
+    return jsonify({"status": receipt_printer_manager.get_status()})
 
-@app.route('/receipt/print', methods=['POST'])
+@app.route('/receipt/print')
 def trigger_print_job():
-    data = request.json
-    # Assume the print data is sent in the request body
-    success = printer_manager.print(data.get('content', ''))
+    order_number = request.args.get('order_number', '00')
+    success = receipt_printer_manager.print(order_number, 1)
     return jsonify({"success": success})
 
 @app.route('/test')
@@ -26,5 +25,5 @@ def print():
 
 if __name__ == '__main__':
     # Start the printer status checking in a separate thread
-    threading.Thread(target=printer_manager.start_status_checking, daemon=True).start()
+    threading.Thread(target=receipt_printer_manager.start_status_checking, daemon=True).start()
     app.run(host='0.0.0.0', port=80)

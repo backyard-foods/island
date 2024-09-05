@@ -1,8 +1,10 @@
 version: "2"
 
 services:
-  balena-hello-world:
+  island-dev:
     build: .
     ports:
       - "80:80"
     privileged: true
+    labels:
+      io.balena.features.supervisor-api: '1'

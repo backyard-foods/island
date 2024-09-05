@@ -1,0 +1,139 @@
+import time
+from escpos.printer import Usb
+from escpos.exceptions import DeviceNotFoundError
+#from PIL import Image
+import threading
+import os
+import requests
+
+class ReceiptPrinterManager:
+    def __init__(self):
+        self.make = 0x04b8
+        self.model = 0x0202
+        self.profile = "TM-T88IV"
+        self.status = "Unknown"
+        self.last_log = ""
+        self.poll_interval = 30
+        self.printer = Usb(idVendor=self.make, idProduct=self.model, usb_args={}, timeout=self.poll_interval, profile=self.profile)
+        self.lock = threading.Lock()
+        self.cooldown = 5
+        self.last_request_time = 0
+
+    def get_status(self):
+        return self.status
+
+    def throttle(self):
+        current_time = time.time()
+        elapsed_time = current_time - self.last_request_time
+        if elapsed_time < self.cooldown:
+            time.sleep(self.cooldown - elapsed_time)
+            print(f"Throttled for {self.cooldown - elapsed_time} seconds")
+        self.last_request_time = time.time()
+
+    def print(self, order, sku):
+        with self.lock:
+            self.throttle()
+
+            self.printer.open()
+            if self.status != "ready":
+                self.printer.close()
+                return False
+            try:
+                print("Printing")
+                # Print logo
+                # image = Image.open('logo_ready.bmp')
+                # image = Image.open('logo.png')
+                # image = image.convert('1')  # Convert to 1-bit black and white
+                # image.save('logo_ready.bmp')  # Save it as BMP if needed
+                # self.printer.image(image)
+                self.printer.ln(2)
+                self.printer.set(align='center', double_height=True, double_width=True, bold=True, density=3)
+                self.printer.text("Order #: ")
+                self.printer.text(str(order).capitalize())
+                
+                self.printer.ln(2)
+                self.printer.set(align='center', normal_textsize=True)
+                self.printer.text("3 Tender Combo")
+                
+                self.printer.ln(2)
+                fake_ean13_code = f'900000000000{sku}'
+                self.printer.barcode(fake_ean13_code, 'EAN13', 64, 2, '', '')
+               
+                self.printer.ln(2)
+                self.printer.text("Park fact: Yellowstone was the first national park in the world, established in 1872")
+                
+                self.printer.ln(2)
+                self.printer.cut()
+                #self.printer.close()
+                return True
+            
+            except Exception as e:
+                self.last_log = f"Print error: {str(e)}"
+                print(self.last_log)
+                #self.printer.close()
+                return False
+
+    # TODO: Handle re-initializing the printer after disconnection
+    # TODO: Handle other exception types in https://python-escpos.readthedocs.io/en/latest/api/exceptions.html#exceptions
+    # TODO: Clean up logic for determining printer status
+    def check_status(self):
+        with self.lock:
+            self.throttle()
+            try:
+                print(f"Checking status, last status: {self.status}")
+                prev_status = self.status
+                
+                self.printer.open()
+
+                online_status = self.printer.is_online()
+                paper_status = self.printer.paper_status()
+
+                print(f"Online status: {online_status}, Paper status: {paper_status}")
+
+                if paper_status == 2 and online_status == True:
+                    self.status = "ready"
+                elif paper_status == 1:
+                    self.status = "low_paper" 
+                elif paper_status == 0:
+                    self.status = "out_of_paper"
+                else:
+                    self.status = "error"
+                
+                if prev_status != self.status:
+                    self.last_log = f"Printer status changed to: {self.status}"
+                    print(self.last_log)
+            except DeviceNotFoundError as e:
+                self.status = "offline"
+                self.last_log = f"Printer not found: {str(e)}"
+                print(self.last_log)
+            except Exception as e:
+                self.last_log = f"Status check error: {str(e)}"
+                print(self.last_log)
+            finally:
+                self.printer.close()
+        if self.status == "offline":
+            self.restart_container()
+
+    def restart_container(self):
+        app_id = os.environ['BALENA_APP_ID']
+        supervisor_address = os.environ['BALENA_SUPERVISOR_ADDRESS']
+        api_key = os.environ['BALENA_SUPERVISOR_API_KEY']
+
+        if not all([app_id, supervisor_address, api_key]):
+            print("Error: Missing required environment variables")
+            return
+
+        url = f"{supervisor_address}/v1/restart?apikey={api_key}"
+        payload = {"appId": app_id}
+        
+        try:
+            response = requests.post(url, json=payload)
+            response.raise_for_status()
+            print("Container restart request sent successfully")
+        except requests.exceptions.RequestException as e:
+            print(f"Failed to restart container: {e}")
+
+    def start_status_checking(self):
+        while True:
+            self.check_status()
+            time.sleep(self.poll_interval)
