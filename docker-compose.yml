@@ -1,10 +1,19 @@
-version: "2"
+version: "0.1"
 
 services:
-  island-dev:
-    build: .
+  island:
+    build: ./island
     ports:
       - "80:80"
     privileged: true
     labels:
       io.balena.features.supervisor-api: '1'
+  wifi-connect:
+    build: ./wifi-connect
+    network_mode: "host"
+    labels:
+      io.balena.features.dbus: '1'
+    cap_add:
+      - NET_ADMIN
+    environment:
+      DBUS_SYSTEM_BUS_ADDRESS: "unix:path=/host/run/dbus/system_bus_socket"
