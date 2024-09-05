@@ -89,9 +89,6 @@ class ReceiptPrinterManager:
                 return False
             return True
 
-    # TODO: Handle re-initializing the printer after disconnection
-    # TODO: Handle other exception types in https://python-escpos.readthedocs.io/en/latest/api/exceptions.html#exceptions
-    # TODO: Clean up logic for determining printer status
     def check_status(self):
         with self.lock:
             self.throttle()
