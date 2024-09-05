@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, jsonify, request
 from receipt_printer_manager import ReceiptPrinterManager
 import threading
 
