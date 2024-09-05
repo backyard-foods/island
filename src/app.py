@@ -5,10 +5,6 @@ import threading
 app = Flask(__name__, template_folder='../views', static_folder='../views/public')
 receipt_printer_manager = ReceiptPrinterManager()
 
-@app.route('/')
-def hello_world():
-    return render_template('index.html')
-
 @app.route('/receipt/status')
 def get_printer_status():
     return jsonify({"status": receipt_printer_manager.get_status()})
