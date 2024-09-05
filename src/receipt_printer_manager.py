@@ -72,6 +72,22 @@ class ReceiptPrinterManager:
                 print(self.last_log)
                 #self.printer.close()
                 return False
+    
+    def reload_paper(self):
+        with self.lock:
+            self.throttle()
+            try:
+                self.printer.open()
+                self.printer.ln(20)
+                self.printer.text("RELOADING PAPER")
+                self.printer.ln(20)
+                self.printer.cut()
+                self.printer.close()
+            except Exception as e:
+                self.last_log = f"Reload paper error: {str(e)}"
+                print(self.last_log)
+                return False
+            return True
 
     # TODO: Handle re-initializing the printer after disconnection
     # TODO: Handle other exception types in https://python-escpos.readthedocs.io/en/latest/api/exceptions.html#exceptions

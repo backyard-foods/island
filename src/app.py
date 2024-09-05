@@ -19,6 +19,11 @@ def trigger_print_job():
     success = receipt_printer_manager.print(order_number, 1)
     return jsonify({"success": success})
 
+@app.route('/receipt/reload')
+def reload_paper():
+    success = receipt_printer_manager.reload_paper()
+    return jsonify({"success": success})
+
 @app.route('/test')
 def print():
     return "printing!"
