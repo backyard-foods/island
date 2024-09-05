@@ -2,7 +2,7 @@ from flask import Flask, jsonify, request
 from receipt_printer_manager import ReceiptPrinterManager
 import threading
 
-app = Flask(__name__, template_folder='../views', static_folder='../views/public')
+app = Flask(__name__)
 receipt_printer_manager = ReceiptPrinterManager()
 
 @app.route('/receipt/status')
