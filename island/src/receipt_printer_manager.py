@@ -78,14 +78,14 @@ class ReceiptPrinterManager:
         image = image.convert('1')  # Convert to 1-bit black and white
         image.save('logo_ready.bmp')  # Save it as BMP if needed
         self.printer.image(image)
-        self.clear_buffer()
+        self.clear_printer_data_buffer()
 
     def print_heading(self, order):
         self.printer.ln(2)
         self.printer.set(align='center', double_height=True, double_width=True, bold=True, density=3)
         self.printer.text("Order #: ")
         self.printer.text(str(order).title())
-        self.clear_buffer()
+        self.clear_printer_data_buffer()
 
     def print_details(self, details):
         self.printer.ln(2)
@@ -96,15 +96,14 @@ class ReceiptPrinterManager:
         self.printer.ln(2)
         fake_ean13_code = f'900000000000{sku}'
         self.printer.barcode(fake_ean13_code, 'EAN13', 64, 2, '', '')
-        self.clear_buffer()
+        self.clear_printer_data_buffer()
     
     def print_message(self, message):
         self.printer.ln(2)
         self.printer.set(align='center', normal_textsize=True)
         self.printer.text(message)
 
-    # Sleep for 300ms to allow printer to clear data in buffer
-    def clear_buffer(self):
+    def clear_printer_data_buffer(self):
         #time.sleep(0.3)
     
     def reload_paper(self):
