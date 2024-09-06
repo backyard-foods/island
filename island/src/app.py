@@ -12,17 +12,13 @@ def get_printer_status():
 @app.route('/receipt/print')
 def trigger_print_job():
     order_number = request.args.get('order_number', '00')
-    success = receipt_printer_manager.print(order_number, 1)
+    success = receipt_printer_manager.print_receipt(order_number, 1)
     return jsonify({"success": success})
 
 @app.route('/receipt/reload')
 def reload_paper():
     success = receipt_printer_manager.reload_paper()
     return jsonify({"success": success})
-
-@app.route('/test')
-def print():
-    return "printing!"
 
 if __name__ == '__main__':
     # Start the printer status checking in a separate thread

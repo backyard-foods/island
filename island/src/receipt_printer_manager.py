@@ -30,7 +30,7 @@ class ReceiptPrinterManager:
             print(f"Throttled for {self.cooldown - elapsed_time} seconds")
         self.last_request_time = time.time()
 
-    def print(self, order, sku):
+    def print_receipt(self, order, sku):
         with self.lock:
             self.throttle()
 
