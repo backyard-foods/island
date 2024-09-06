@@ -91,7 +91,6 @@ class ReceiptPrinterManager:
         self.printer.ln(2)
         self.printer.set(align='center', normal_textsize=True)
         self.printer.text(details)
-        self.clear_buffer()
 
     def print_barcode(self, sku):
         self.printer.ln(2)
@@ -103,7 +102,6 @@ class ReceiptPrinterManager:
         self.printer.ln(2)
         self.printer.set(align='center', normal_textsize=True)
         self.printer.text(message)
-        self.clear_buffer()
 
     def clear_buffer(self):
         time.sleep(0.3)
