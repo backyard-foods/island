@@ -83,15 +83,13 @@ class ReceiptPrinterManager:
     def print_heading(self, order):
         self.printer.ln(2)
         self.printer.set(align='center', double_height=True, double_width=True, bold=True, density=3)
-        text = self.format_string(f"Order #: {str(order).title()}", True)
-        self.printer.text(text)
+        self.printer.text(self.format_string(f"Order #: {str(order).title()}", True))
         self.clear_printer_data_buffer()
 
     def print_details(self, details):
         self.printer.ln(2)
         self.printer.set(align='center', normal_textsize=True)
-        text = self.format_string(details, False)
-        self.printer.text(text)
+        self.printer.text(self.format_string(details, False))
 
     def print_barcode(self, sku):
         self.printer.ln(2)
@@ -102,7 +100,7 @@ class ReceiptPrinterManager:
     def print_message(self, message):
         self.printer.ln(2)
         self.printer.set(align='center', normal_textsize=True)
-        self.printer.text(message)
+        self.printer.text(self.format_string(message, False))
 
     def clear_printer_data_buffer(self):
         time.sleep(0.3)
