@@ -39,6 +39,7 @@ class ReceiptPrinterManager:
                 return False
             try:
                 self.printer.open()
+                self.printer.cut()
                 print("Printing")
                 # Print logo
                 # image = Image.open('logo_ready.bmp')
