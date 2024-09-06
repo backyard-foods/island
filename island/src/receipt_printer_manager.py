@@ -105,6 +105,7 @@ class ReceiptPrinterManager:
 
     def clear_printer_data_buffer(self):
         #time.sleep(0.3)
+        return
     
     def reload_paper(self):
         with self.lock:
