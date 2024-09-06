@@ -83,14 +83,15 @@ class ReceiptPrinterManager:
     def print_heading(self, order):
         self.printer.ln(2)
         self.printer.set(align='center', double_height=True, double_width=True, bold=True, density=3)
-        self.printer.text("Order #: ")
-        self.printer.text(str(order).title())
+        text = self.format_string(f"Order #: {str(order).title()}", True)
+        self.printer.text(text)
         self.clear_printer_data_buffer()
 
     def print_details(self, details):
         self.printer.ln(2)
         self.printer.set(align='center', normal_textsize=True)
-        self.printer.text(details)
+        text = self.format_string(details, False)
+        self.printer.text(text)
 
     def print_barcode(self, sku):
         self.printer.ln(2)
@@ -105,6 +106,24 @@ class ReceiptPrinterManager:
 
     def clear_printer_data_buffer(self):
         time.sleep(0.3)
+
+    def format_string(self, string, double_size):
+        char_limit = 38 if double_size else 21
+        words = string.split()
+        lines = []
+        current_line = ""
+        
+        for word in words:
+            if len(current_line) + len(word) + 1 <= char_limit:
+                current_line += " " + word if current_line else word
+            elif current_line:  
+                lines.append(current_line)
+                current_line = word
+    
+        if current_line:
+            lines.append(current_line)
+        
+        return '\n'.join(lines)
     
     def reload_paper(self):
         with self.lock:
