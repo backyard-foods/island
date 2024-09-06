@@ -103,6 +103,7 @@ class ReceiptPrinterManager:
         self.printer.set(align='center', normal_textsize=True)
         self.printer.text(message)
 
+    # Sleep for 300ms to allow printer to clear data in buffer
     def clear_buffer(self):
         #time.sleep(0.3)
     
