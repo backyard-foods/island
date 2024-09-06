@@ -11,13 +11,13 @@ class ReceiptPrinterManager:
         self.make = 0x04b8
         self.model = 0x0202
         self.profile = "TM-T88IV"
-        self.status = "Unknown"
-        self.last_log = ""
         self.poll_interval = 30
         self.printer = Usb(idVendor=self.make, idProduct=self.model, usb_args={}, timeout=self.poll_interval, profile=self.profile)
-        self.lock = threading.Lock()
         self.cooldown = 5
         self.last_request_time = 0
+        self.lock = threading.Lock()
+        self.status = "Unknown"
+        self.last_log = ""
 
     def get_status(self):
         return self.status
@@ -34,11 +34,11 @@ class ReceiptPrinterManager:
         with self.lock:
             self.throttle()
 
-            self.printer.open()
             if self.status != "ready":
                 self.printer.close()
                 return False
             try:
+                self.printer.open()
                 print("Printing")
                 # Print logo
                 # image = Image.open('logo_ready.bmp')
@@ -64,13 +64,13 @@ class ReceiptPrinterManager:
                 
                 self.printer.ln(2)
                 self.printer.cut()
-                #self.printer.close()
+                self.printer.close()
                 return True
             
             except Exception as e:
                 self.last_log = f"Print error: {str(e)}"
                 print(self.last_log)
-                #self.printer.close()
+                self.printer.close()
                 return False
     
     def reload_paper(self):
