@@ -30,7 +30,7 @@ class ReceiptPrinterManager:
             print(f"Throttled for {self.cooldown - elapsed_time} seconds")
         self.last_request_time = time.time()
 
-    def print_receipt(self, order, sku):
+    def print_receipt(self, order, sku, details, message):
         with self.lock:
             self.throttle()
 
@@ -38,40 +38,75 @@ class ReceiptPrinterManager:
                 self.printer.close()
                 return False
             try:
-                self.printer.open()
-                print("Printing")
-                # Print logo
-                # image = Image.open('logo_ready.bmp')
-                # image = Image.open('logo.png')
-                # image = image.convert('1')  # Convert to 1-bit black and white
-                # image.save('logo_ready.bmp')  # Save it as BMP if needed
-                # self.printer.image(image)
-                self.printer.ln(2)
-                self.printer.set(align='center', double_height=True, double_width=True, bold=True, density=3)
-                self.printer.text("Order #: ")
-                self.printer.text(str(order).capitalize())
+                self.start_print_job()
+                #self.print_logo()
+
+                if(order):
+                    self.print_heading(order)
+
+                if(details):
+                    self.print_details(details)
                 
-                self.printer.ln(2)
-                self.printer.set(align='center', normal_textsize=True)
-                self.printer.text("3 Tender Combo")
+                if(sku):
+                    self.print_barcode(sku)
                 
-                self.printer.ln(2)
-                fake_ean13_code = f'900000000000{sku}'
-                self.printer.barcode(fake_ean13_code, 'EAN13', 64, 2, '', '')
-               
-                self.printer.ln(2)
-                self.printer.text("Park fact: Yellowstone was the first national park in the world, established in 1872")
+                if(message):
+                    self.print_message(message)
                 
-                self.printer.ln(2)
-                self.printer.cut()
-                self.printer.close()
+                self.end_print_job()
                 return True
             
             except Exception as e:
                 self.last_log = f"Print error: {str(e)}"
                 print(self.last_log)
-                self.printer.close()
+                self.end_print_job()
                 return False
+    
+    def start_print_job(self):
+        self.printer.open()
+        print("Printing")
+
+    def end_print_job(self):
+        self.printer.ln(2)
+        self.printer.cut()
+        self.printer.close()
+
+    def print_logo(self):
+        # Print logo
+        image = Image.open('logo_ready.bmp')
+        image = Image.open('logo.png')
+        image = image.convert('1')  # Convert to 1-bit black and white
+        image.save('logo_ready.bmp')  # Save it as BMP if needed
+        self.printer.image(image)
+        self.clear_buffer()
+
+    def print_heading(self, order):
+        self.printer.ln(2)
+        self.printer.set(align='center', double_height=True, double_width=True, bold=True, density=3)
+        self.printer.text("Order #: ")
+        self.printer.text(str(order).title())
+        self.clear_buffer()
+
+    def print_details(self, details):
+        self.printer.ln(2)
+        self.printer.set(align='center', normal_textsize=True)
+        self.printer.text(details)
+        self.clear_buffer()
+
+    def print_barcode(self, sku):
+        self.printer.ln(2)
+        fake_ean13_code = f'900000000000{sku}'
+        self.printer.barcode(fake_ean13_code, 'EAN13', 64, 2, '', '')
+        self.clear_buffer()
+    
+    def print_message(self, message):
+        self.printer.ln(2)
+        self.printer.set(align='center', normal_textsize=True)
+        self.printer.text(message)
+        self.clear_buffer()
+
+    def clear_buffer(self):
+        time.sleep(0.3)
     
     def reload_paper(self):
         with self.lock:

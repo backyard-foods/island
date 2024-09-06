@@ -11,8 +11,12 @@ def get_printer_status():
 
 @app.route('/receipt/print')
 def trigger_print_job():
-    order_number = request.args.get('order_number', '00')
-    success = receipt_printer_manager.print_receipt(order_number, 1)
+    order = request.args.get('order', '00')
+    message = request.args.get('message', '')
+    sku = request.args.get('sku', '1')
+    details = request.args.get('details', '3 Tender Combo')
+    message = request.args.get('message', 'Park fact: Yellowstone was the first national park in the world, established in 1872')
+    success = receipt_printer_manager.print_receipt(order, sku, details, message)
     return jsonify({"success": success})
 
 @app.route('/receipt/reload')
