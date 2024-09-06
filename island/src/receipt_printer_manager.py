@@ -104,7 +104,7 @@ class ReceiptPrinterManager:
         self.printer.text(message)
 
     def clear_buffer(self):
-        time.sleep(0.3)
+        #time.sleep(0.3)
     
     def reload_paper(self):
         with self.lock:
