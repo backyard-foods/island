@@ -5,6 +5,7 @@ from escpos.exceptions import DeviceNotFoundError
 import threading
 import os
 import requests
+import json
 
 class ReceiptPrinterManager:
     def __init__(self):
@@ -31,6 +32,7 @@ class ReceiptPrinterManager:
         self.last_request_time = time.time()
 
     def print_receipt(self, order, skus, details, message):
+        
         with self.lock:
             self.throttle()
 
@@ -48,6 +50,11 @@ class ReceiptPrinterManager:
                     self.print_details(details)
                 
                 if(skus):
+                    try:
+                        skus = json.loads(skus)
+                    except json.JSONDecodeError:
+                        print(f"Error: Invalid SKU format. Received: {skus}")
+                        skus = []
                     for sku in skus:
                         self.print_barcode(sku)
                 
@@ -94,7 +101,8 @@ class ReceiptPrinterManager:
 
     def print_barcode(self, sku):
         self.printer.ln(2)
-        fake_ean13_code = f'900000000000{sku}'
+        sku_str = str(sku).zfill(12)[-12:]
+        fake_ean13_code = f'9{sku_str}'
         self.printer.barcode(fake_ean13_code, 'EAN13', 64, 2, '', '')
         self.clear_printer_data_buffer()
     
@@ -107,12 +115,14 @@ class ReceiptPrinterManager:
         time.sleep(0.3)
 
     def format_string(self, string, double_size):
+        print(f"Formatting string: {string}")
         char_limit = 21 if double_size else 38
         words = string.split()
         lines = []
         current_line = ""
         
         for word in words:
+            print(f"Current line: {current_line}, word: {word}")
             if len(current_line) + len(word) + 1 <= char_limit:
                 current_line += " " + word if current_line else word
             elif current_line:  
