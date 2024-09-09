@@ -115,7 +115,6 @@ class ReceiptPrinterManager:
         time.sleep(0.3)
 
     def format_string(self, string, double_size):
-        print(f"Formatting string: {string}")
         char_limit = 21 if double_size else 38
         lines = []
         
