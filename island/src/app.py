@@ -19,7 +19,6 @@ def trigger_print_job():
     
     # Start the print job in a separate thread
     threading.Thread(target=receipt_printer_manager.print_receipt, args=(order, skus, details, message), daemon=True).start()
-    
     return jsonify({"success": True, "message": "Print job started"})
 
 @app.route('/receipt/reload')
