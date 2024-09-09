@@ -117,19 +117,24 @@ class ReceiptPrinterManager:
     def format_string(self, string, double_size):
         print(f"Formatting string: {string}")
         char_limit = 21 if double_size else 38
-        words = string.split()
         lines = []
-        current_line = ""
         
-        for word in words:
-            print(f"Current line: {current_line}, word: {word}")
-            if len(current_line) + len(word) + 1 <= char_limit:
-                current_line += " " + word if current_line else word
-            elif current_line:  
+        # Split the input string by newlines first
+        for input_line in string.split('\n'):
+            words = input_line.split()
+            current_line = ""
+            
+            for word in words:
+                if len(current_line) + len(word) + 1 <= char_limit:
+                    current_line += " " + word if current_line else word
+                else:
+                    if current_line:
+                        lines.append(current_line)
+                    current_line = word
+            
+            if current_line:
                 lines.append(current_line)
-                current_line = word
-        if current_line:
-            lines.append(current_line)
+        
         return '\n'.join(lines)
     
     def reload_paper(self):
