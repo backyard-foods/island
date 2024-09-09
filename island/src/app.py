@@ -16,8 +16,11 @@ def trigger_print_job():
     skus = request.args.get('skus', ['1'])
     details = request.args.get('details', '3 Tender Combo')
     message = request.args.get('message', 'Park fact: Yellowstone was the first national park in the world, established in 1872')
-    success = receipt_printer_manager.print_receipt(order, skus, details, message)
-    return jsonify({"success": success})
+    
+    # Start the print job in a separate thread
+    threading.Thread(target=receipt_printer_manager.print_receipt, args=(order, skus, details, message), daemon=True).start()
+    
+    return jsonify({"success": True, "message": "Print job started"})
 
 @app.route('/receipt/reload')
 def reload_paper():
