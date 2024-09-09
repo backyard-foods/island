@@ -75,7 +75,7 @@ class BYFAPIClient:
             "Content-Type": "application/json"
         }
         notify_body = {
-            "order": order,
+            "orderName": order,
         }
 
         try:
