@@ -47,8 +47,9 @@ class ReceiptPrinterManager:
                 if(details):
                     self.print_details(details)
                 
-                if(sku):
-                    self.print_barcode(sku)
+                if(skus):
+                    for sku in skus:
+                        self.print_barcode(sku)
                 
                 if(message):
                     self.print_message(message)
