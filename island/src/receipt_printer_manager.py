@@ -6,6 +6,7 @@ import threading
 import os
 import requests
 import json
+from byf_api_client import BYFAPIClient
 
 class ReceiptPrinterManager:
     def __init__(self):
@@ -19,6 +20,7 @@ class ReceiptPrinterManager:
         self.lock = threading.Lock()
         self.status = "Unknown"
         self.last_log = ""
+        self.byf_client = BYFAPIClient()
 
     def get_status(self):
         return self.status
@@ -62,6 +64,12 @@ class ReceiptPrinterManager:
                     self.print_message(message)
                 
                 self.end_print_job()
+                
+                try:
+                    self.byf_client.notify_print_success(order)
+                except Exception as e:
+                    print(f"Failed to notify backend of print success: {e}")
+                
                 return True
             
             except Exception as e:
