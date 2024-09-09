@@ -13,7 +13,7 @@ def get_printer_status():
 def trigger_print_job():
     order = request.args.get('order', '00')
     message = request.args.get('message', '')
-    sku = request.args.get('sku', '1')
+    sku = request.args.get('skus', ['1'])
     details = request.args.get('details', '3 Tender Combo')
     message = request.args.get('message', 'Park fact: Yellowstone was the first national park in the world, established in 1872')
     success = receipt_printer_manager.print_receipt(order, sku, details, message)
