@@ -3,10 +3,9 @@ from escpos.printer import Usb
 from escpos.exceptions import DeviceNotFoundError
 #from PIL import Image
 import threading
-import os
-import requests
 import json
 from byf_api_client import BYFAPIClient
+from utils import restart_container, format_string
 
 class ReceiptPrinterManager:
     def __init__(self):
@@ -99,13 +98,13 @@ class ReceiptPrinterManager:
     def print_heading(self, order):
         self.printer.ln(2)
         self.printer.set(align='center', double_height=True, double_width=True, bold=True, density=3)
-        self.printer.text(self.format_string(f"Order #: {str(order).title()}", True))
+        self.printer.text(format_string(f"Order #: {str(order).title()}", True))
         self.clear_printer_data_buffer()
 
     def print_details(self, details):
         self.printer.ln(2)
         self.printer.set(align='center', normal_textsize=True)
-        self.printer.text(self.format_string(details, False))
+        self.printer.text(format_string(details, False))
 
     def print_barcode(self, sku):
         self.printer.ln(2)
@@ -117,33 +116,11 @@ class ReceiptPrinterManager:
     def print_message(self, message):
         self.printer.ln(2)
         self.printer.set(align='center', normal_textsize=True)
-        self.printer.text(self.format_string(message, False))
+        self.printer.text(format_string(message, False))
 
     def clear_printer_data_buffer(self):
         time.sleep(0.3)
 
-    def format_string(self, string, double_size):
-        char_limit = 21 if double_size else 38
-        lines = []
-        
-        # Split the input string by newlines first
-        for input_line in string.split('\n'):
-            words = input_line.split()
-            current_line = ""
-            
-            for word in words:
-                if len(current_line) + len(word) + 1 <= char_limit:
-                    current_line += " " + word if current_line else word
-                else:
-                    if current_line:
-                        lines.append(current_line)
-                    current_line = word
-            
-            if current_line:
-                lines.append(current_line)
-        
-        return '\n'.join(lines)
-    
     def reload_paper(self):
         with self.lock:
             self.throttle()
@@ -196,26 +173,7 @@ class ReceiptPrinterManager:
             finally:
                 self.printer.close()
         if self.status == "offline":
-            self.restart_container()
-
-    def restart_container(self):
-        app_id = os.environ['BALENA_APP_ID']
-        supervisor_address = os.environ['BALENA_SUPERVISOR_ADDRESS']
-        api_key = os.environ['BALENA_SUPERVISOR_API_KEY']
-
-        if not all([app_id, supervisor_address, api_key]):
-            print("Error: Missing required environment variables")
-            return
-
-        url = f"{supervisor_address}/v1/restart?apikey={api_key}"
-        payload = {"appId": app_id}
-        
-        try:
-            response = requests.post(url, json=payload)
-            response.raise_for_status()
-            print("Container restart request sent successfully")
-        except requests.exceptions.RequestException as e:
-            print(f"Failed to restart container: {e}")
+            restart_container()
 
     def start_status_checking(self):
         while True:
