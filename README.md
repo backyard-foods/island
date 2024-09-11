@@ -3,10 +3,12 @@
 - Turn on `Local mode` in the [Balena dashboard](https://dashboard.balena-cloud.com/devices)
 - Run `sudo balena scan` to scan for devices
 - Run `balena push <address>` to push to device and start [live reloads](https://docs.balena.io/learn/develop/local-mode/) 
+- Define local env vars in `docker-compose.yml`
 
 # Pushing to fleet
 - Get fleet name: `balena fleets`
 - Push to fleet: `balena push <fleet-name>`
+- Define prod env vars in balena console at fleet and/or device level
 
 # Updating device Wi-Fi
 1. SSH into Host OS
