@@ -23,7 +23,7 @@ def print_receipt():
     details = request.args.get('details', '3 Tender Combo')
     # Start the print job in a separate thread
     threading.Thread(target=receipt_printer_manager.print_receipt, args=(order, skus, details, message), daemon=True).start()
-    return jsonify({"success": True, "message": "Print job started"})
+    return jsonify({"success": True, "message": "Receipt print job started"})
 
 @app.route('/label/print')
 def print_label():
@@ -32,7 +32,7 @@ def print_label():
     item_number = request.args.get('item_number', '1')
     item_total = request.args.get('item_total', '1')
     label_printer_manager.print_label(order, item, item_number, item_total)
-    return jsonify({"success": True, "message": "Print job started"})
+    return jsonify({"success": True, "message": "Label print job started"})
 
 @app.route('/receipt/reload')
 def reload_receipt_paper():
