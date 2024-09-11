@@ -4,6 +4,8 @@
 - Run `sudo balena scan` to scan for devices
 - Run `balena push <address>` to push to device and start [live reloads](https://docs.balena.io/learn/develop/local-mode/) 
 - Define local env vars in `docker-compose.yml`
+- Start `byf-api` locally (`supabase start` then `supabase functions serve`)
+- Start `oasis-island` locally
 
 # Pushing to fleet
 - Get fleet name: `balena fleets`
