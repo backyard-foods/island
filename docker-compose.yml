@@ -8,6 +8,11 @@ services:
     privileged: true
     labels:
       io.balena.features.supervisor-api: '1'
+    environment:
+      BYF_API_URL: http://127.0.0.1:54321
+      ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+      BYF_USER: milan@backyardfoods.com
+      BYF_PW: testtest
   wifi-connect:
     build: ./wifi-connect
     network_mode: "host"
