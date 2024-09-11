@@ -29,7 +29,7 @@ class ReceiptPrinterManager:
         elapsed_time = current_time - self.last_request_time
         if elapsed_time < self.cooldown:
             time.sleep(self.cooldown - elapsed_time)
-            print(f"Throttled for {self.cooldown - elapsed_time} seconds")
+            print(f"[Receipt Printer] Throttled for {self.cooldown - elapsed_time} seconds")
         self.last_request_time = time.time()
 
     def print_receipt(self, order, skus, details, message):
@@ -54,7 +54,7 @@ class ReceiptPrinterManager:
                     try:
                         skus = json.loads(skus)
                     except json.JSONDecodeError:
-                        print(f"Error: Invalid SKU format. Received: {skus}")
+                        print(f"[Receipt Printer] Error: Invalid SKU format. Received: {skus}")
                         skus = []
                     for sku in skus:
                         self.print_barcode(sku)
@@ -67,19 +67,19 @@ class ReceiptPrinterManager:
                 try:
                     self.byf_client.notify_print_success(order)
                 except Exception as e:
-                    print(f"Failed to notify backend of print success: {e}")
+                    print(f"[Receipt Printer] Failed to notify backend of print success: {e}")
                 
                 return True
             
             except Exception as e:
                 self.last_log = f"Print error: {str(e)}"
-                print(self.last_log)
+                print(f"[Receipt Printer] {self.last_log}")
                 self.end_print_job()
                 return False
     
     def start_print_job(self):
         self.printer.open()
-        print("Printing")
+        print("[Receipt Printer] Printing")
 
     def end_print_job(self):
         self.printer.ln(2)
@@ -93,13 +93,13 @@ class ReceiptPrinterManager:
         image = image.convert('1')  # Convert to 1-bit black and white
         image.save('logo_ready.bmp')  # Save it as BMP if needed
         self.printer.image(image)
-        self.clear_printer_data_buffer()
+        self.clear_receipt_data_buffer()
 
     def print_heading(self, order):
         self.printer.ln(2)
         self.printer.set(align='center', double_height=True, double_width=True, bold=True, density=3)
         self.printer.text(format_string(f"Order #: {str(order).title()}", True))
-        self.clear_printer_data_buffer()
+        self.clear_receipt_data_buffer()
 
     def print_details(self, details):
         self.printer.ln(2)
@@ -111,14 +111,14 @@ class ReceiptPrinterManager:
         sku_str = str(sku).zfill(12)[-12:]
         fake_ean13_code = f'9{sku_str}'
         self.printer.barcode(fake_ean13_code, 'EAN13', 64, 2, '', '')
-        self.clear_printer_data_buffer()
+        self.clear_receipt_data_buffer()
     
     def print_message(self, message):
         self.printer.ln(2)
         self.printer.set(align='center', normal_textsize=True)
         self.printer.text(format_string(message, False))
 
-    def clear_printer_data_buffer(self):
+    def clear_receipt_data_buffer(self):
         time.sleep(0.3)
 
     def reload_paper(self):
@@ -126,14 +126,14 @@ class ReceiptPrinterManager:
             self.throttle()
             try:
                 self.printer.open()
-                self.printer.ln(20)
+                self.printer.ln(12)
                 self.printer.text("RELOADING PAPER")
-                self.printer.ln(20)
+                self.printer.ln(12)
                 self.printer.cut()
                 self.printer.close()
             except Exception as e:
                 self.last_log = f"Reload paper error: {str(e)}"
-                print(self.last_log)
+                print(f"[Receipt Printer] {self.last_log}")
                 return False
             return True
 
@@ -141,7 +141,7 @@ class ReceiptPrinterManager:
         with self.lock:
             self.throttle()
             try:
-                print(f"Checking status, last status: {self.status}")
+                print(f"[Receipt Printer] Checking status, last status: {self.status}")
                 prev_status = self.status
                 
                 self.printer.open()
@@ -149,7 +149,7 @@ class ReceiptPrinterManager:
                 online_status = self.printer.is_online()
                 paper_status = self.printer.paper_status()
 
-                print(f"Online status: {online_status}, Paper status: {paper_status}")
+                print(f"[Receipt Printer] Online status: {online_status}, Paper status: {paper_status}")
 
                 if paper_status == 2 and online_status == True:
                     self.status = "ready"
@@ -162,14 +162,14 @@ class ReceiptPrinterManager:
                 
                 if prev_status != self.status:
                     self.last_log = f"Printer status changed to: {self.status}"
-                    print(self.last_log)
+                    print(f"[Receipt Printer] {self.last_log}")
             except DeviceNotFoundError as e:
                 self.status = "offline"
                 self.last_log = f"Printer not found: {str(e)}"
-                print(self.last_log)
+                print(f"[Receipt Printer] {self.last_log}")
             except Exception as e:
                 self.last_log = f"Status check error: {str(e)}"
-                print(self.last_log)
+                print(f"[Receipt Printer] {self.last_log}")
             finally:
                 self.printer.close()
         if self.status == "offline":
