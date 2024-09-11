@@ -81,7 +81,30 @@ class BYFAPIClient:
         try:
             notify_response = requests.post(notify_url, json=notify_body, headers=notify_headers)
             notify_response.raise_for_status()
-            print("Successfully notified backend of print completion")
+            print("[Receipt Printer] Successfully notified backend of print completion")
         except requests.exceptions.RequestException as e:
-            print(f"Failed to notify backend: {e}")
+            print(f"[Receipt Printer] Failed to notify backend: {e}")
+            raise
+
+    def notify_label_success(self, item_id):
+        if not self.is_token_valid():
+            self.authenticate()
+
+        self.get_state()
+
+        notify_url = f"{self.api_url}/functions/v1/label-print"
+        notify_headers = {
+            "Authorization": f"Bearer {self.access_token}",
+            "Content-Type": "application/json"
+        }
+        notify_body = {
+            "itemId": item_id,
+        }
+
+        try:
+            notify_response = requests.post(notify_url, json=notify_body, headers=notify_headers)
+            notify_response.raise_for_status()
+            print("[Label Printer] Successfully notified backend of label print completion")
+        except requests.exceptions.RequestException as e:
+            print(f"[Label Printer] Failed to notify backend: {e}")
             raise

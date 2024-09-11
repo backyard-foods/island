@@ -32,8 +32,8 @@ class LabelPrinterManager:
             print(f"[Label Printer] Throttled for {self.cooldown - elapsed_time} seconds")
         self.last_request_time = time.time()
 
-    def print_label(self, order, item, item_number, item_total):
-        print(f"[Label Printer] Printing label for order: {order}, item: {item}, item_number: {item_number}, item_total: {item_total}")
+    def print_label(self, order, item, item_number, item_total, item_id=None):
+        print(f"[Label Printer] Printing label for order: {order}, item: {item}, item_number: {item_number}, item_total: {item_total}, id: {item_id}")
         with self.lock:
             self.throttle()
 
@@ -57,10 +57,11 @@ class LabelPrinterManager:
                 
                 self.end_print_job()
                 
-                try:
-                    self.byf_client.notify_print_success(order)
-                except Exception as e:
-                    print(f"[Label Printer] Failed to notify backend of print success: {e}")
+                if item_id:
+                    try:
+                        self.byf_client.notify_label_success(item_id)
+                    except Exception as e:
+                        print(f"[Label Printer] Failed to notify backend of print success: {e}")
                 
                 return True
             
