@@ -92,7 +92,7 @@ class BYFAPIClient:
 
         self.get_state()
 
-        notify_url = f"{self.api_url}/functions/v1/label-print"
+        notify_url = f"{self.api_url}/functions/v1/print-label"
         notify_headers = {
             "Authorization": f"Bearer {self.access_token}",
             "Content-Type": "application/json"
