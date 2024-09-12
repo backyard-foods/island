@@ -21,3 +21,7 @@
 6. `esc` to exit insert mode
 7. `:wq` to save and exit
 8. Restart device
+
+# SSH when running in Local Mode
+- Host OS: `balena ssh <device-IP-address>`
+- Container: `sudo balena ssh <device-IP-address> <container-name>`
