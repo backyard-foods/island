@@ -1,6 +1,7 @@
 # base-image for python on any machine using a template variable,
 # see more about dockerfile templates here: https://www.balena.io/docs/learn/develop/dockerfile/
-FROM balenalib/%%BALENA_ARCH%%-python:3-run
+# Downgraded to python 3.8.16 to avoid issues with rpi-rgb-led-matrix library
+FROM balenalib/%%BALENA_ARCH%%-python:3.8.16-run
 
 # Install usbutils for usb device detection
 RUN install_packages usbutils 
@@ -17,8 +18,20 @@ RUN pip install -r requirements.txt
 # This will copy all files in our root to the working  directory in the container
 COPY . ./
 
-# Enable udevd so that plugged dynamic hardware devices show up in our container.
+# Enable udevd so that plugged dynamic hardware devices show up in our container (receipt printers)
 ENV UDEV=1
+
+# install rpi-rgb-led-matrix library
+RUN sudo apt-get update
+RUN sudo apt-get install build-essential
+RUN sudo apt-get install cython3
+
+WORKDIR /usr/src/app/src/rpi-rgb-led-matrix
+RUN sudo make build-python
+RUN sudo make install-python
+
+# Reset working directory
+WORKDIR /usr/src/app
 
 # main.py will run when container starts up on the device
 CMD ["python","-u","src/app.py"]
