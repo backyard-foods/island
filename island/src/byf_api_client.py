@@ -14,6 +14,7 @@ class BYFAPIClient:
         self.access_token = None
         self.token_expiry = 0 
         self.state = None
+        self.auth_retries = 0
 
     def authenticate(self):
         auth_url = f"{self.api_url}/auth/v1/token?grant_type=password"
@@ -30,7 +31,8 @@ class BYFAPIClient:
             auth_response = requests.post(auth_url, json=auth_data, headers=auth_headers)
             auth_response.raise_for_status()
             self.access_token = auth_response.json()['access_token']
-            self.token_expiry = time() + auth_response.json().get('expires_in', 3600)  # Add this line
+            self.token_expiry = time() + auth_response.json().get('expires_in', 3600)
+            self.auth_retries = 0
         except requests.exceptions.RequestException as e:
             print(f"Authentication failed: {e}")
             raise
@@ -58,6 +60,11 @@ class BYFAPIClient:
             
         except requests.exceptions.RequestException as e:
             print(f"Failed to get device state: {e}")
+            if self.auth_retries < 3:
+                print(f"Retrying authentication... ({self.auth_retries}/3)")
+                self.auth_retries += 1
+                self.authenticate()
+                return self.get_state()
             raise
 
     def is_token_valid(self):
