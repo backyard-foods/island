@@ -86,7 +86,7 @@ class BYFAPIClient:
             print(f"[Receipt Printer] Failed to notify backend: {e}")
             raise
 
-    def notify_label_success(self, item_id):
+    def notify_label_success(self, label):
         if not self.is_token_valid():
             self.authenticate()
 
@@ -98,7 +98,7 @@ class BYFAPIClient:
             "Content-Type": "application/json"
         }
         notify_body = {
-            "itemId": item_id,
+            "label": label,
         }
 
         try:
