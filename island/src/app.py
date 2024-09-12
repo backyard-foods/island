@@ -31,10 +31,10 @@ def print_label():
     item = request.args.get('item', '3 Tender Combo')
     item_number = request.args.get('item_number', '1')
     item_total = request.args.get('item_total', '1')
-    label = request.args.get('label')
+    fulfillment = request.args.get('fulfillment')
 
-    if label:
-        label_printer_manager.print_label(order, item, item_number, item_total, label=label)
+    if fulfillment:
+        label_printer_manager.print_label(order, item, item_number, item_total, fulfillment=fulfillment)
     else:
         label_printer_manager.print_label(order, item, item_number, item_total)
     
