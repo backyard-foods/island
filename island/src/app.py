@@ -2,10 +2,12 @@ from flask import Flask, jsonify, request
 from receipt_printer_manager import ReceiptPrinterManager
 from label_printer_manager import LabelPrinterManager
 import threading
+from byf_api_client import BYFAPIClient
 
 app = Flask(__name__)
-receipt_printer_manager = ReceiptPrinterManager()
-label_printer_manager = LabelPrinterManager()
+byf_client = BYFAPIClient()
+receipt_printer_manager = ReceiptPrinterManager(byf_client)
+label_printer_manager = LabelPrinterManager(byf_client)
 
 @app.route('/receipt/status')
 def get_receipt_printer_status():

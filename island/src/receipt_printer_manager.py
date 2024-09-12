@@ -8,7 +8,7 @@ from byf_api_client import BYFAPIClient
 from utils import restart_container, format_string
 
 class ReceiptPrinterManager:
-    def __init__(self):
+    def __init__(self, byf_client):
         self.make = 0x04b8
         self.model = 0x0202
         self.profile = "TM-T88IV"
@@ -19,7 +19,7 @@ class ReceiptPrinterManager:
         self.lock = threading.Lock()
         self.status = "Unknown"
         self.last_log = ""
-        self.byf_client = BYFAPIClient()
+        self.byf_client = byf_client
 
     def get_status(self):
         return self.status
