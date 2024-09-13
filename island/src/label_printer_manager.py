@@ -3,18 +3,22 @@ from escpos.printer import Usb
 from escpos.exceptions import DeviceNotFoundError
 #from PIL import Image
 import threading
-import json
-from byf_api_client import BYFAPIClient
 from utils import restart_container, format_string
+
+LOG_PREFIX = "[label-printer]"
+
+# TM-L00 printer
+MAKE = 0x04b8
+MODEL = 0x0e31
+PROFILE = "TM-L90"  # Wrong profile for the TM-L00, but no issues so far
+POLL_INTERVAL = 30
+COOLDOWN = 5
 
 class LabelPrinterManager:
     def __init__(self, byf_client):
-        self.make = 0x04b8
-        self.model = 0x0e31
-        self.profile = "TM-L90" # Wrong profile for the TM-L00, but no issues so far
-        self.poll_interval = 30
-        self.printer = Usb(idVendor=self.make, idProduct=self.model, usb_args={}, timeout=self.poll_interval, profile=self.profile)
-        self.cooldown = 5
+        self.poll_interval = POLL_INTERVAL
+        self.printer = Usb(idVendor=MAKE, idProduct=MODEL, usb_args={}, timeout=self.poll_interval, profile=PROFILE)
+        self.cooldown = COOLDOWN
         self.last_request_time = 0
         self.lock = threading.Lock()
         self.status = "Unknown"
@@ -29,11 +33,11 @@ class LabelPrinterManager:
         elapsed_time = current_time - self.last_request_time
         if elapsed_time < self.cooldown:
             time.sleep(self.cooldown - elapsed_time)
-            print(f"[Label Printer] Throttled for {self.cooldown - elapsed_time} seconds")
+            print(f"{LOG_PREFIX} Throttled for {self.cooldown - elapsed_time} seconds")
         self.last_request_time = time.time()
 
     def print_label(self, order, item, item_number, item_total, fulfillment=None):
-        print(f"[Label Printer] Printing label for order: {order}, item: {item}, item_number: {item_number}, item_total: {item_total}, fulfillment: {fulfillment}")
+        print(f"{LOG_PREFIX} Printing label for order: {order}, item: {item}, item_number: {item_number}, item_total: {item_total}, fulfillment: {fulfillment}")
         with self.lock:
             self.throttle()
 
@@ -53,7 +57,7 @@ class LabelPrinterManager:
                     if(int(item_total) > 1 and int(item_number) > 0):
                         self.print_count(item_number, item_total)
                 except ValueError:
-                    print(f"[Label Printer] Invalid item_total value: {item_total}")
+                    print(f"{LOG_PREFIX} Invalid item_total value: {item_total}")
                 
                 self.end_print_job()
                 
@@ -61,19 +65,19 @@ class LabelPrinterManager:
                     try:
                         self.byf_client.notify_label_success(fulfillment)
                     except Exception as e:
-                        print(f"[Label Printer] Failed to notify backend of print success: {e}")
+                        print(f"{LOG_PREFIX} Failed to notify backend of print success: {e}")
                 
                 return True
             
             except Exception as e:
                 self.last_log = f"Print error: {str(e)}"
-                print(f"[Label Printer] {self.last_log}")
+                print(f"{LOG_PREFIX} {self.last_log}")
                 self.end_print_job()
                 return False
     
     def start_print_job(self):
         self.printer.open()
-        print("[Label Printer] Printing")
+        print(f"{LOG_PREFIX} Printing")
 
     def end_print_job(self):
         self.printer.ln(2)
@@ -111,7 +115,7 @@ class LabelPrinterManager:
                 self.printer.close()
             except Exception as e:
                 self.last_log = f"Reload paper error: {str(e)}"
-                print(f"[Label Printer] {self.last_log}")
+                print(f"{LOG_PREFIX} {self.last_log}")
                 return False
             return True
 
@@ -119,7 +123,7 @@ class LabelPrinterManager:
         with self.lock:
             self.throttle()
             try:
-                print(f"[Label Printer] Checking status, last status: {self.status}")
+                print(f"{LOG_PREFIX} Checking status, last status: {self.status}")
                 prev_status = self.status
                 
                 self.printer.open()
@@ -127,7 +131,7 @@ class LabelPrinterManager:
                 online_status = self.printer.is_online()
                 paper_status = self.printer.paper_status()
 
-                print(f"[Label Printer] Online status: {online_status}, Paper status: {paper_status}")
+                print(f"{LOG_PREFIX} Online status: {online_status}, Paper status: {paper_status}")
 
                 if paper_status == 2 and online_status == True:
                     self.status = "ready"
@@ -140,14 +144,14 @@ class LabelPrinterManager:
                 
                 if prev_status != self.status:
                     self.last_log = f"Printer status changed to: {self.status}"
-                    print(f"[Label Printer] {self.last_log}")
+                    print(f"{LOG_PREFIX} {self.last_log}")
             except DeviceNotFoundError as e:
                 self.status = "offline"
                 self.last_log = f"Printer not found: {str(e)}"
-                print(f"[Label Printer] {self.last_log}")
+                print(f"{LOG_PREFIX} {self.last_log}")
             except Exception as e:
                 self.last_log = f"Status check error: {str(e)}"
-                print(f"[Label Printer] {self.last_log}")
+                print(f"{LOG_PREFIX} {self.last_log}")
             finally:
                 self.printer.close()
         if self.status == "offline":

@@ -7,14 +7,20 @@ import json
 from byf_api_client import BYFAPIClient
 from utils import restart_container, format_string
 
+LOG_PREFIX = "[receipt-printer]"
+
+# TM-T88IV printer
+MAKE = 0x04b8
+MODEL = 0x0202
+PROFILE = "TM-T88IV"
+POLL_INTERVAL = 30
+COOLDOWN = 5
+
 class ReceiptPrinterManager:
     def __init__(self, byf_client):
-        self.make = 0x04b8
-        self.model = 0x0202
-        self.profile = "TM-T88IV"
-        self.poll_interval = 30
-        self.printer = Usb(idVendor=self.make, idProduct=self.model, usb_args={}, timeout=self.poll_interval, profile=self.profile)
-        self.cooldown = 5
+        self.poll_interval = POLL_INTERVAL
+        self.printer = Usb(idVendor=MAKE, idProduct=MODEL, usb_args={}, timeout=self.poll_interval, profile=PROFILE)
+        self.cooldown = COOLDOWN
         self.last_request_time = 0
         self.lock = threading.Lock()
         self.status = "Unknown"
@@ -29,7 +35,7 @@ class ReceiptPrinterManager:
         elapsed_time = current_time - self.last_request_time
         if elapsed_time < self.cooldown:
             time.sleep(self.cooldown - elapsed_time)
-            print(f"[Receipt Printer] Throttled for {self.cooldown - elapsed_time} seconds")
+            print(f"{LOG_PREFIX} Throttled for {self.cooldown - elapsed_time} seconds")
         self.last_request_time = time.time()
 
     def print_receipt(self, order, skus, details, message):
@@ -54,7 +60,7 @@ class ReceiptPrinterManager:
                     try:
                         skus = json.loads(skus)
                     except json.JSONDecodeError:
-                        print(f"[Receipt Printer] Error: Invalid SKU format. Received: {skus}")
+                        print(f"{LOG_PREFIX} Error: Invalid SKU format. Received: {skus}")
                         skus = []
                     for sku in skus:
                         self.print_barcode(sku)
@@ -67,19 +73,19 @@ class ReceiptPrinterManager:
                 try:
                     self.byf_client.notify_print_success(order)
                 except Exception as e:
-                    print(f"[Receipt Printer] Failed to notify backend of print success: {e}")
+                    print(f"{LOG_PREFIX} Failed to notify backend of print success: {e}")
                 
                 return True
             
             except Exception as e:
                 self.last_log = f"Print error: {str(e)}"
-                print(f"[Receipt Printer] {self.last_log}")
+                print(f"{LOG_PREFIX} {self.last_log}")
                 self.end_print_job()
                 return False
     
     def start_print_job(self):
         self.printer.open()
-        print("[Receipt Printer] Printing")
+        print(f"{LOG_PREFIX} Printing")
 
     def end_print_job(self):
         self.printer.ln(2)
@@ -133,7 +139,7 @@ class ReceiptPrinterManager:
                 self.printer.close()
             except Exception as e:
                 self.last_log = f"Reload paper error: {str(e)}"
-                print(f"[Receipt Printer] {self.last_log}")
+                print(f"{LOG_PREFIX} {self.last_log}")
                 return False
             return True
 
@@ -141,7 +147,7 @@ class ReceiptPrinterManager:
         with self.lock:
             self.throttle()
             try:
-                print(f"[Receipt Printer] Checking status, last status: {self.status}")
+                print(f"{LOG_PREFIX} Checking status, last status: {self.status}")
                 prev_status = self.status
                 
                 self.printer.open()
@@ -149,7 +155,7 @@ class ReceiptPrinterManager:
                 online_status = self.printer.is_online()
                 paper_status = self.printer.paper_status()
 
-                print(f"[Receipt Printer] Online status: {online_status}, Paper status: {paper_status}")
+                print(f"{LOG_PREFIX} Online status: {online_status}, Paper status: {paper_status}")
 
                 if paper_status == 2 and online_status == True:
                     self.status = "ready"
@@ -162,14 +168,14 @@ class ReceiptPrinterManager:
                 
                 if prev_status != self.status:
                     self.last_log = f"Printer status changed to: {self.status}"
-                    print(f"[Receipt Printer] {self.last_log}")
+                    print(f"{LOG_PREFIX} {self.last_log}")
             except DeviceNotFoundError as e:
                 self.status = "offline"
                 self.last_log = f"Printer not found: {str(e)}"
-                print(f"[Receipt Printer] {self.last_log}")
+                print(f"{LOG_PREFIX} {self.last_log}")
             except Exception as e:
                 self.last_log = f"Status check error: {str(e)}"
-                print(f"[Receipt Printer] {self.last_log}")
+                print(f"{LOG_PREFIX} {self.last_log}")
             finally:
                 self.printer.close()
         if self.status == "offline":
