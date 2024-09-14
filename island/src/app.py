@@ -36,9 +36,9 @@ def print_label():
     fulfillment = request.args.get('fulfillment')
 
     if fulfillment:
-        label_printer_manager.print_label(order, item, item_number, item_total, fulfillment=fulfillment)
+        threading.Thread(target=label_printer_manager.print_label, args=(order, item, item_number, item_total, fulfillment=fulfillment), daemon=True).start()
     else:
-        label_printer_manager.print_label(order, item, item_number, item_total)
+        threading.Thread(target=label_printer_manager.print_label, args=(order, item, item_number, item_total), daemon=True).start()
     
     return jsonify({"success": True, "message": "Label print job started"})
 
