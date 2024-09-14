@@ -36,7 +36,7 @@ def print_label():
     fulfillment = request.args.get('fulfillment')
 
     if fulfillment:
-        threading.Thread(target=label_printer_manager.print_label, args=(order, item, item_number, item_total, fulfillment=fulfillment), daemon=True).start()
+        threading.Thread(target=label_printer_manager.print_label, args=(order, item, item_number, item_total, fulfillment), daemon=True).start()
     else:
         threading.Thread(target=label_printer_manager.print_label, args=(order, item, item_number, item_total), daemon=True).start()
     
