@@ -54,6 +54,6 @@ def reload_label_paper():
 
 if __name__ == '__main__':
     # Start receipt & label printer status checking in a separate thread
-    threading.Thread(target=receipt_printer_manager.start_status_checking, daemon=True).start()
-    threading.Thread(target=label_printer_manager.start_status_checking, daemon=True).start()   
+    # threading.Thread(target=receipt_printer_manager.start_status_checking, daemon=True).start()
+    # threading.Thread(target=label_printer_manager.start_status_checking, daemon=True).start()   
     app.run(host='0.0.0.0', port=80)
