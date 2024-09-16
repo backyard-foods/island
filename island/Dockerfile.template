@@ -21,15 +21,5 @@ COPY . ./
 # Enable udevd so that plugged dynamic hardware devices show up in our container (receipt printers)
 ENV UDEV=1
 
-# RPI-RGB-LED-MATRIX STEPS
-# Install dependencies for building rpi-rgb-led-matrix library
-RUN apt-get update
-RUN apt-get install build-essential
-RUN apt-get install cython3
-
-# Build and install the rpi-rgb-led-matrix library
-RUN make -C /usr/src/app/src/rpi-rgb-led-matrix build-python
-RUN make -C /usr/src/app/src/rpi-rgb-led-matrix install-python
-
 # main.py will run when container starts up on the device
 CMD ["python","-u","src/app.py"]
