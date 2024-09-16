@@ -53,6 +53,7 @@ def reload_label_paper():
     return jsonify({"success": success})
 
 if __name__ == '__main__':
+    print("*****STARTING ON RGB_TESTING BRANCH*****")
     # Start receipt & label printer status checking in a separate thread
     # threading.Thread(target=receipt_printer_manager.start_status_checking, daemon=True).start()
     # threading.Thread(target=label_printer_manager.start_status_checking, daemon=True).start()   

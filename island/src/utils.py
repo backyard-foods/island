@@ -14,9 +14,9 @@ def restart_container():
     payload = {"appId": app_id}
     
     try:
-        response = requests.post(url, json=payload)
-        response.raise_for_status()
-        print("Container restart request sent successfully")
+        # response = requests.post(url, json=payload)
+        # response.raise_for_status()
+        print("******SKIPPED Container restart request******")
     except requests.exceptions.RequestException as e:
         print(f"Failed to restart container: {e}")
 
