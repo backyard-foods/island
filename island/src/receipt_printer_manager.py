@@ -178,8 +178,8 @@ class ReceiptPrinterManager:
                 print(f"{LOG_PREFIX} {self.last_log}")
             finally:
                 self.printer.close()
-        if self.status == "offline":
-            restart_container()
+        #if self.status == "offline":
+        #    restart_container()
 
     def start_status_checking(self):
         while True:
