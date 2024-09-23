@@ -5,9 +5,16 @@ def restart_container():
     app_id = os.environ['BALENA_APP_ID']
     supervisor_address = os.environ['BALENA_SUPERVISOR_ADDRESS']
     api_key = os.environ['BALENA_SUPERVISOR_API_KEY']
+    restart_policy = os.environ['RESTART_POLICY']
 
-    if not all([app_id, supervisor_address, api_key]):
+    if not all([app_id, supervisor_address, api_key, restart_policy]):
         print("Error: Missing required environment variables")
+        return
+    
+    if restart_policy == "1":
+        print("Restarting container")
+    else:
+        print("Skipping restart per policy")
         return
 
     url = f"{supervisor_address}/v1/restart?apikey={api_key}"
