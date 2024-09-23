@@ -6,9 +6,6 @@ FROM balenalib/%%BALENA_ARCH%%-python:3.8.16-run
 # Install usbutils for usb device detection
 RUN install_packages usbutils
 
-# Load w1_therm kernel module
-RUN modprobe w1_therm
-
 # Set our working directory
 WORKDIR /usr/src/app
 
