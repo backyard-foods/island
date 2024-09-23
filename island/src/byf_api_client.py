@@ -1,6 +1,9 @@
 import os
 import requests
-from time import time
+import time
+from temp_sensor_manager import TempSensorManager
+
+POLL_INTERVAL = 60
 
 class BYFAPIClient:
     def __init__(self):
@@ -15,6 +18,9 @@ class BYFAPIClient:
         self.token_expiry = 0 
         self.state = None
         self.auth_retries = 0
+        self.poll_interval = POLL_INTERVAL
+        self.temp_sensor_manager = TempSensorManager()
+        self.temp_sensor_manager.start_temperature_checking()
 
     def authenticate(self):
         auth_url = f"{self.api_url}/auth/v1/token?grant_type=password"
@@ -31,7 +37,7 @@ class BYFAPIClient:
             auth_response = requests.post(auth_url, json=auth_data, headers=auth_headers)
             auth_response.raise_for_status()
             self.access_token = auth_response.json()['access_token']
-            self.token_expiry = time() + auth_response.json().get('expires_in', 3600)
+            self.token_expiry = time.time() + auth_response.json().get('expires_in', 3600)
             self.auth_retries = 0
         except requests.exceptions.RequestException as e:
             print(f"Authentication failed: {e}")
@@ -53,7 +59,10 @@ class BYFAPIClient:
             self.authenticate()
         
         try:
-            state_response = requests.get(state_url, headers=state_headers, params=state_url_params)
+            print(f"Getting device state from {state_url}")
+            temperature_events = self.temp_sensor_manager.get_events()
+            print(f"Temperature events: {temperature_events}")
+            state_response = requests.post(state_url, headers=state_headers, params=state_url_params, json=temperature_events)
             state_response.raise_for_status()
             self.state = state_response.json()
             return self.state
@@ -68,7 +77,7 @@ class BYFAPIClient:
             raise
 
     def is_token_valid(self):
-        return self.access_token and time() < self.token_expiry
+        return self.access_token and time.time() < self.token_expiry
 
     def notify_print_success(self, order):
         if not self.is_token_valid():
@@ -115,3 +124,8 @@ class BYFAPIClient:
         except requests.exceptions.RequestException as e:
             print(f"[Label Printer] Failed to notify backend: {e}")
             raise
+
+    def start_polling(self):
+        while True:
+            self.get_state()
+            time.sleep(self.poll_interval)
