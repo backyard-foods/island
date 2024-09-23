@@ -10,7 +10,7 @@ def restart_container():
     if not all([app_id, supervisor_address, api_key, restart_policy]):
         print("Error: Missing required environment variables")
         return
-    
+
     if restart_policy == "1":
         print("Restarting container")
     else:
