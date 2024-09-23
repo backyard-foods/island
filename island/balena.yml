@@ -1,5 +1,6 @@
 name: island-dev
 type: sw.application
+version: 0.0.1
 joinable: false
 description: >-
   This is the first iteration of the BYF Island
