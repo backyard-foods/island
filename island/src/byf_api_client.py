@@ -61,7 +61,6 @@ class BYFAPIClient:
         try:
             print(f"Getting device state from {state_url}")
             temperature_events = self.temp_sensor_manager.get_events()
-            print(f"Temperature events: {temperature_events}")
             state_response = requests.post(state_url, headers=state_headers, params=state_url_params, json=temperature_events)
             state_response.raise_for_status()
             self.state = state_response.json()
