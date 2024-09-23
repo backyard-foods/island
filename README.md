@@ -11,6 +11,7 @@
 - Get fleet name: `balena fleets`
 - Push to fleet: `balena push <fleet-name>`
 - Define prod env vars in balena console at fleet and/or device level
+- Define prod configuration in balena console at fleet level (e.g. set dtoverlay for one-wire)
 
 # Updating device Wi-Fi
 1. SSH into Host OS
