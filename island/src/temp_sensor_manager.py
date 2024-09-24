@@ -3,12 +3,15 @@ import time
 import threading
 from datetime import datetime
 
+BASE_DIR = '/sys/bus/w1/devices/'
+POLL_INTERVAL = 30
+
 class TempSensorManager:
     def __init__(self):
-        self.base_dir = '/sys/bus/w1/devices/'
+        self.base_dir = BASE_DIR
         self.sensors = {}
         self.update_connected_sensors()
-        self.poll_interval = 30
+        self.poll_interval = POLL_INTERVAL
 
     def update_connected_sensors(self):
         device_folders = glob.glob(self.base_dir + '28*')
@@ -29,9 +32,9 @@ class TempSensorManager:
             del self.sensors[sensor_id]
 
         if len(self.sensors) > 0:
-            self.poll_interval = 30
+            self.poll_interval = POLL_INTERVAL
         else:
-            self.poll_interval = 600
+            self.poll_interval = POLL_INTERVAL * 20
 
     def read_temp_raw(self, device_file):
         with open(device_file, 'r') as f:
@@ -70,14 +73,19 @@ class TempSensorManager:
         # Use the timestamp of the first sensor as the event timestamp
         timestamp = next(iter(last_readings.values()))['timestamp']
         
-        values_c = {sensor_id: data['reading'] for sensor_id, data in last_readings.items()}
+        values_c = {}
+        ids = {}
+        for index, (sensor_id, data) in enumerate(last_readings.items(), start=1):
+            values_c[str(index)] = data['reading']
+            ids[str(index)] = sensor_id
         
         event = {
             "type": "temperature",
             "timestamp": timestamp,
             "data": {
                 "connectedSensors": connected_sensors,
-                "valuesC": values_c
+                "valuesC": values_c,
+                "ids": ids
             }
         }
         
