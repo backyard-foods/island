@@ -1,7 +1,7 @@
 name: baywatch
 type: sw.application
 description: >-
-  Testing the camera stack
+  Camera manager
 assets:
   repository:
     type: blob.asset
