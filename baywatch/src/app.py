@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request
-from capture import capture_and_upload
+from camera_manager import capture_and_upload
 
 app = Flask(__name__)
 

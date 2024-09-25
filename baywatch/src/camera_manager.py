@@ -1,6 +1,7 @@
 import subprocess
 import os
 import requests
+from picamera2 import Picamera2
 
 def capture_image_to_memory():
     try:
