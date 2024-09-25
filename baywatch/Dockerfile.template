@@ -1,11 +1,14 @@
-FROM balenalib/%%BALENA_MACHINE_NAME%%-debian-python:bullseye
+FROM balenalib/%%BALENA_MACHINE_NAME%%-python:3.11-bookworm-run
 
-RUN install_packages \
-    libcamera-dev \
-    libcamera-apps-lite \
-    python3 \
-    v4l-utils \
-    python3-picamera2 --no-install-recommends
+# Ensure pip builde with latest modules
+RUN pip install --upgrade pip setuptools wheel
+
+# Add Raspberry Pi repo
+RUN curl -sS http://archive.raspberrypi.org/debian/raspberrypi.gpg.key | gpg --dearmor > /etc/apt/trusted.gpg.d/raspberrypi.gpg.key
+RUN echo "deb [signed-by=/etc/apt/trusted.gpg.d/raspberrypi.gpg.key] http://archive.raspberrypi.org/debian/ bookworm main" >> /etc/apt/sources.list.d/raspi.list
+
+# Install the python camera packages
+RUN install_packages python3-libcamera python3-picamera2
 
 COPY start.sh ./
 
