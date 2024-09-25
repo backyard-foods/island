@@ -58,7 +58,7 @@ def capture_test():
     try:
         print("Capturing image")
         token = byf_client.get_access_token()
-        response = requests.get(f'http://cam-testing:1234/capture?token={token}')
+        response = requests.get(f'http://baywatch:1234/capture?token={token}')
         response.raise_for_status()
         return jsonify({"success": True, "message": "Image captured"})
     except requests.RequestException as e:
