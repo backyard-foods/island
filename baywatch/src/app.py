@@ -10,8 +10,10 @@ def capture():
         return jsonify({"success": False, "message": "Token is required"}), 400
     
     print("Capturing image")
-    capture_and_upload(token)
-    return jsonify({"success": True, "message": "Image captured"})
+    if capture_and_upload(token):
+        return jsonify({"success": True, "message": "Image captured"})
+    else:
+        return jsonify({"success": False, "message": "Image capture failed"}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=1234)

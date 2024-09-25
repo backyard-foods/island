@@ -62,7 +62,7 @@ def capture_test():
         response.raise_for_status()
         return jsonify({"success": True, "message": "Image captured"})
     except requests.RequestException as e:
-        return jsonify({"success": False, "message": f"Error capturing image: {str(e)}"})
+        return jsonify({"success": False, "message": "Error capturing image"})
 
 if __name__ == '__main__':
     # Start receipt & label printer status checking in a separate thread
