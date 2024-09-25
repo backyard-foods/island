@@ -1,4 +1,4 @@
-name: cam-testing
+name: baywatch
 type: sw.application
 description: >-
   Testing the camera stack
@@ -24,4 +24,4 @@ data:
     - raspberrypi3
     - raspberrypi4-64
     - fincm3
-version: 0.1.0
+version: 0.0.1
