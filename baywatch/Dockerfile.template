@@ -2,9 +2,10 @@ FROM balenalib/%%BALENA_MACHINE_NAME%%-debian-python:bullseye
 
 RUN install_packages \
     libcamera-dev \
-    libcamera-apps \
+    libcamera-apps-lite \
     python3 \
-    v4l-utils
+    v4l-utils \
+    python3-picamera2 --no-install-recommends
 
 COPY start.sh ./
 
