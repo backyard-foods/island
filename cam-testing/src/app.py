@@ -1,0 +1,17 @@
+from flask import Flask, jsonify, request
+from capture import capture_and_upload
+
+app = Flask(__name__)
+
+@app.route('/capture')
+def capture():
+    token = request.args.get('token')
+    if not token:
+        return jsonify({"success": False, "message": "Token is required"}), 400
+    
+    print("Capturing image")
+    capture_and_upload(token)
+    return jsonify({"success": True, "message": "Image captured"})
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=1234)

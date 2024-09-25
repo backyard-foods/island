@@ -1,0 +1,27 @@
+FROM balenalib/%%BALENA_MACHINE_NAME%%-debian-python:bullseye
+
+RUN install_packages \
+    libcamera-dev \
+    libcamera-apps \
+    python3 \
+    v4l-utils
+
+COPY start.sh ./
+
+WORKDIR /usr/src/app
+
+# Copy requirements.txt first for better cache on later pushes
+COPY requirements.txt requirements.txt
+
+RUN pip install -r requirements.txt
+
+# This will copy all files in our root to the working  directory in the container
+COPY . ./
+
+RUN chmod +x start.sh
+
+ENV UDEV=on
+
+CMD ["sh","./start.sh"]
+
+CMD ["python","-u","src/app.py"]

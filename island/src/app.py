@@ -3,6 +3,7 @@ from receipt_printer_manager import ReceiptPrinterManager
 from label_printer_manager import LabelPrinterManager
 import threading
 from byf_api_client import BYFAPIClient
+import requests
 
 app = Flask(__name__)
 byf_client = BYFAPIClient()
@@ -51,6 +52,17 @@ def reload_receipt_paper():
 def reload_label_paper():
     success = label_printer_manager.reload_paper()
     return jsonify({"success": success})
+
+@app.route('/capture-test')
+def capture_test():
+    try:
+        print("Capturing image")
+        token = byf_client.get_access_token()
+        response = requests.get(f'http://cam-testing:1234/capture?token={token}')
+        response.raise_for_status()
+        return jsonify({"success": True, "message": "Image captured"})
+    except requests.RequestException as e:
+        return jsonify({"success": False, "message": f"Error capturing image: {str(e)}"})
 
 if __name__ == '__main__':
     # Start receipt & label printer status checking in a separate thread
