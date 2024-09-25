@@ -1,7 +1,9 @@
 from flask import Flask, jsonify, request
-from camera_manager import capture_and_upload
+from camera_manager import CameraManager
 
 app = Flask(__name__)
+
+camera_manager = CameraManager()
 
 @app.route('/capture')
 def capture():
@@ -10,7 +12,7 @@ def capture():
         return jsonify({"success": False, "message": "Token is required"}), 400
     
     print("Capturing image")
-    if capture_and_upload(token):
+    if camera_manager.capture_and_upload(token):
         return jsonify({"success": True, "message": "Image captured"})
     else:
         return jsonify({"success": False, "message": "Image capture failed"}), 500
