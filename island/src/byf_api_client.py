@@ -77,6 +77,11 @@ class BYFAPIClient:
 
     def is_token_valid(self):
         return self.access_token and time.time() < self.token_expiry
+    
+    def get_access_token(self):
+        if not self.is_token_valid():
+            self.authenticate()
+        return self.access_token
 
     def notify_print_success(self, order):
         if not self.is_token_valid():

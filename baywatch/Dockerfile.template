@@ -1,0 +1,31 @@
+FROM balenalib/%%BALENA_MACHINE_NAME%%-python:3.11-bookworm-run
+
+# Ensure pip builde with latest modules
+RUN pip install --upgrade pip setuptools wheel
+
+# Add Raspberry Pi repo
+RUN curl -sS http://archive.raspberrypi.org/debian/raspberrypi.gpg.key | gpg --dearmor > /etc/apt/trusted.gpg.d/raspberrypi.gpg.key
+RUN echo "deb [signed-by=/etc/apt/trusted.gpg.d/raspberrypi.gpg.key] http://archive.raspberrypi.org/debian/ bookworm main" >> /etc/apt/sources.list.d/raspi.list
+
+# Install the python camera packages
+RUN install_packages python3-libcamera python3-picamera2
+
+COPY start.sh ./
+
+WORKDIR /usr/src/app
+
+# Copy requirements.txt first for better cache on later pushes
+COPY requirements.txt requirements.txt
+
+RUN pip install -r requirements.txt
+
+# This will copy all files in our root to the working  directory in the container
+COPY . ./
+
+RUN chmod +x start.sh
+
+ENV UDEV=on
+
+CMD ["sh","./start.sh"]
+
+CMD ["python","-u","src/app.py"]

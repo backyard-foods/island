@@ -10,8 +10,8 @@
 # Pushing to fleet
 - Get fleet name: `balena fleets`
 - Push to fleet: `balena push <fleet-name>`
-- Define prod env vars in balena console at fleet and/or device level
-- Define prod configuration in balena console at fleet level (e.g. set dtoverlay for one-wire)
+- Define env vars in balena console at fleet and/or device level
+- Update configuration in `island-config.sh` and run `zsh island-config.sh <dev|prod>` to set fleet-wide configuration
 
 # Updating device Wi-Fi
 1. SSH into Host OS
