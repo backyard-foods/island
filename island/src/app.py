@@ -10,6 +10,23 @@ byf_client = BYFAPIClient()
 receipt_printer_manager = ReceiptPrinterManager(byf_client)
 label_printer_manager = LabelPrinterManager(byf_client)
 
+def capture_image(trigger):
+    try:
+        print(f"Sending capture request to baywatch with trigger: {trigger}")
+        token = byf_client.get_access_token()
+        response = requests.get(f'http://baywatch:1234/capture?token={token}&trigger={trigger}')
+        response.raise_for_status()
+        return {"success": True, "message": "Image capture request sent"}
+    except requests.RequestException as e:
+        print(f"Error capturing image: {str(e)}")
+        return {"success": False, "message": "Error capturing image"}
+
+def detect_image(trigger):
+    print(f"Sending detect request to baywatch with trigger: {trigger}")
+    token = byf_client.get_access_token()
+    response = requests.get(f'http://baywatch:1234/detect?token={token}&trigger={trigger}')
+    return response
+    
 @app.route('/receipt/status')
 def get_receipt_printer_status():
     return jsonify({"status": receipt_printer_manager.get_status()})
@@ -24,8 +41,16 @@ def print_receipt():
     message = request.args.get('message', '')
     skus = request.args.get('skus', ['1'])
     details = request.args.get('details', '3 Tender Combo')
+    
     # Start the print job in a separate thread
     threading.Thread(target=receipt_printer_manager.print_receipt, args=(order, skus, details, message), daemon=True).start()
+    
+    if 'trigger' in request.args:
+        if request.args.get('image') == 'true':
+            capture_image(request.args.get('trigger'))
+        if request.args.get('detect') == 'true':
+            detect_image(request.args.get('trigger'))
+    
     return jsonify({"success": True, "message": "Receipt print job started"})
 
 @app.route('/label/print')
@@ -40,6 +65,12 @@ def print_label():
         threading.Thread(target=label_printer_manager.print_label, args=(order, item, item_number, item_total, fulfillment), daemon=True).start()
     else:
         threading.Thread(target=label_printer_manager.print_label, args=(order, item, item_number, item_total), daemon=True).start()
+
+    if 'trigger' in request.args:
+        if request.args.get('image') == 'true':
+            capture_image(request.args.get('trigger'))
+        if request.args.get('detect') == 'true':
+            detect_image(request.args.get('trigger'))
     
     return jsonify({"success": True, "message": "Label print job started"})
 
@@ -53,16 +84,20 @@ def reload_label_paper():
     success = label_printer_manager.reload_paper()
     return jsonify({"success": success})
 
-@app.route('/capture-test')
-def capture_test():
-    try:
-        print("Capturing image")
-        token = byf_client.get_access_token()
-        response = requests.get(f'http://baywatch:1234/capture?token={token}')
-        response.raise_for_status()
-        return jsonify({"success": True, "message": "Image captured"})
-    except requests.RequestException as e:
-        return jsonify({"success": False, "message": "Error capturing image"})
+@app.route('/image/capture')
+def capture():
+    trigger = request.args.get('trigger', '')
+    result = capture_image(trigger)
+    return jsonify(result)
+
+@app.route('/image/detect')
+def detect():
+    trigger = request.args.get('trigger', '')
+    response = detect_image(trigger)
+    if response.status_code == 200:
+        return jsonify(response.json())
+    else:
+        return jsonify(response.json()), response.status_code
 
 if __name__ == '__main__':
     # Start receipt & label printer status checking in a separate thread
