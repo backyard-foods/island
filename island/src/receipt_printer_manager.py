@@ -9,23 +9,44 @@ from utils import restart_container, format_string
 
 LOG_PREFIX = "[receipt-printer]"
 
-# TM-T88IV printer
-MAKE = 0x04b8
-MODEL = 0x0202
+MAKE = 0x04b8 # Epson
+MODELS = [0x0e2e, 0x0202] # Supported models: EU-m30, TM-T88IV
 PROFILE = "TM-T88IV"
+
 POLL_INTERVAL = 30
 COOLDOWN = 5
 
 class ReceiptPrinterManager:
     def __init__(self, byf_client):
         self.poll_interval = POLL_INTERVAL
-        self.printer = Usb(idVendor=MAKE, idProduct=MODEL, usb_args={}, timeout=self.poll_interval, profile=PROFILE)
         self.cooldown = COOLDOWN
         self.last_request_time = 0
         self.lock = threading.Lock()
-        self.status = "Unknown"
+        self.status = "offline"
         self.last_log = ""
         self.byf_client = byf_client
+        self.printer = None
+
+        self.initialize_printer()
+
+    def initialize_printer(self):
+        for model in MODELS:
+            try:
+                self.printer = Usb(idVendor=MAKE, idProduct=model, usb_args={}, timeout=self.poll_interval, profile=PROFILE)
+                self.printer.open()
+                self.printer.close()
+                print(f"{LOG_PREFIX} Printer initialized successfully: Vendor ID: {MAKE}, Product ID: {model}")
+                self.status = "ready"
+                return True
+            except DeviceNotFoundError:
+                continue
+            except Exception as e:
+                print(f"{LOG_PREFIX} Error initializing printer with model {model}: {str(e)}")
+        
+        self.status = "offline"
+        self.last_log = "USB printer not found or initialization failed for all models"
+        print(f"{LOG_PREFIX} {self.last_log}")
+        return False
 
     def get_status(self):
         return self.status
@@ -43,6 +64,8 @@ class ReceiptPrinterManager:
         with self.lock:
             self.throttle()
 
+            if self.status == "offline":
+                return False
             if self.status != "ready":
                 self.printer.close()
                 return False
@@ -149,7 +172,12 @@ class ReceiptPrinterManager:
             try:
                 print(f"{LOG_PREFIX} Checking status, last status: {self.status}")
                 prev_status = self.status
-                
+
+                if self.printer is None or self.status == "offline":
+                    print(f"{LOG_PREFIX} Attempting to reinitialize printer")
+                    if not self.initialize_printer():
+                        return
+
                 self.printer.open()
 
                 online_status = self.printer.is_online()
@@ -177,7 +205,8 @@ class ReceiptPrinterManager:
                 self.last_log = f"Status check error: {str(e)}"
                 print(f"{LOG_PREFIX} {self.last_log}")
             finally:
-                self.printer.close()
+                if self.printer:
+                    self.printer.close()
         if self.status == "offline":
             restart_container()
 
