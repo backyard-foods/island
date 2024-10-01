@@ -1,7 +1,7 @@
 name: porchlight
 type: sw.application
 description: >-
-  Camera manager
+  Lighting manager
 assets:
   repository:
     type: blob.asset
