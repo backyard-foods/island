@@ -29,3 +29,7 @@ services:
     privileged: true
     environment:
       BYF_API_URL: http://192.168.1.86:54321
+  porchlight:
+    build: ./porchlight
+    restart: always
+    privileged: true

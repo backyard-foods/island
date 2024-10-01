@@ -64,6 +64,7 @@ class BYFAPIClient:
             state_response = requests.post(state_url, headers=state_headers, params=state_url_params, json=temperature_events)
             state_response.raise_for_status()
             self.state = state_response.json()
+            self.process_state()
             return self.state
             
         except requests.exceptions.RequestException as e:
@@ -74,6 +75,21 @@ class BYFAPIClient:
                 self.authenticate()
                 return self.get_state()
             raise
+
+    def process_state(self):
+        if self.state and 'store' in self.state:
+            store_open = self.state['store'].get('open', False)
+            state = 'on' if store_open else 'off'
+
+            try:
+                print(f"Making sure lights are {state}")
+                response = requests.get(f'http://porchlight:1234/{state}')
+                response.raise_for_status()
+                return True
+            except requests.RequestException as e:
+                print(f"Error sending light {state} request: {str(e)}")
+                return False
+        return False
 
     def is_token_valid(self):
         return self.access_token and time.time() < self.token_expiry
