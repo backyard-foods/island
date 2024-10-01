@@ -99,6 +99,34 @@ def detect():
     else:
         return jsonify(response.json()), response.status_code
 
+@app.route('/light')
+def light_control():
+    on = request.args.get('on', '').lower() == 'true'
+    state = 'on' if on else 'off'
+
+    try:
+        print(f"Sending light {state} request to porchlight")
+        response = requests.get(f'http://porchlight:1234/{state}')
+        response.raise_for_status()
+        return jsonify({"success": True, "message": response.json().get('message', 'Light state changed')})
+    except requests.RequestException as e:
+        print(f"Error sending light {state} request: {str(e)}")
+        return jsonify({"success": False, "message": response.json().get('message', 'Light state changed')})
+    
+@app.route('/store', methods=['POST'])
+def store_control():  
+    open = request.args.get('open', '').lower() == 'true'
+    state = 'on' if open else 'off'
+
+    try:
+        print(f"Sending light {state} request to porchlight")
+        response = requests.get(f'http://porchlight:1234/{state}')
+        response.raise_for_status()
+        return jsonify({"success": True, "message": response.json().get('message', 'Light state changed')})
+    except requests.RequestException as e:
+        print(f"Error sending light {state} request: {str(e)}")
+        return jsonify({"success": False, "message": response.json().get('message', 'Light state changed')})
+
 if __name__ == '__main__':
     # Start receipt & label printer status checking in a separate thread
     threading.Thread(target=receipt_printer_manager.start_status_checking, daemon=True).start()
