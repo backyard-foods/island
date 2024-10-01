@@ -33,3 +33,7 @@ services:
     build: ./porchlight
     restart: always
     privileged: true
+    cap_add:
+      - NET_ADMIN
+    labels:
+      io.balena.features.dbus: 1
