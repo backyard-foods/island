@@ -1,4 +1,7 @@
-FROM balenalib/%%BALENA_MACHINE_NAME%%-python:3.11-bookworm-run
+FROM balenalib/%%BALENA_MACHINE_NAME%%-python:3.7-latest-build 
+
+# Ensure pip build with latest modules
+RUN pip install --upgrade pip setuptools wheel
 
 # Try to install RPi.GPIO from source
 RUN install_packages gcc
