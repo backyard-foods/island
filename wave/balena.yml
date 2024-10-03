@@ -1,7 +1,7 @@
-name: porchlight
+name: wave
 type: sw.application
 description: >-
-  Lighting manager
+  Music manager
 assets:
   repository:
     type: blob.asset
