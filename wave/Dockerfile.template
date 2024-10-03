@@ -1,6 +1,5 @@
 FROM balenalib/%%BALENA_MACHINE_NAME%%-python:3.7-latest-build 
 
-
 RUN apt-get -y install curl && curl -sL https://dtcooper.github.io/raspotify/install.sh | sh
 
 WORKDIR /usr/src/app
