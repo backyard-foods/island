@@ -1,5 +1,6 @@
 version: "2"
-
+volumes:
+  spotify-cache:
 services:
   island:
     build: ./island
@@ -41,3 +42,5 @@ services:
     build: ./wave
     restart: always
     privileged: true
+    volumes:
+      - spotify-cache:/spotify-cache
