@@ -218,8 +218,8 @@ class SpotifyManager:
             response = requests.post('http://island:80/wave/status', json={'status': self.status.value}, timeout=5)
             if response.status_code == 200:
                 self.last_notification_success = True
-                print(f"{LOG_PREFIX} Successfully notified island of spotify status")
+                print(f"{LOG_PREFIX} Successfully sent status notification")
             else:
                 raise Exception(f"HTTP {response.status_code}")
         except Exception as e:
-            print(f"{LOG_PREFIX} Error notifying island of spotify status: {e}")
+            print(f"{LOG_PREFIX} Error sending status notification: {e}")
