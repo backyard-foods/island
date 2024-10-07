@@ -145,6 +145,30 @@ class BYFAPIClient:
             print(f"[Label Printer] Failed to notify backend: {e}")
             raise
 
+    def notify_wave_status(self, status):
+        if not self.is_token_valid():
+            self.authenticate()
+
+        self.get_state()
+
+        notify_url = f"{self.api_url}/functions/v1/wave-status"
+        notify_headers = {
+            "Authorization": f"Bearer {self.access_token}",
+            "Content-Type": "application/json"
+        }
+        notify_body = {
+            "status": status,
+        }
+
+        try:
+            notify_response = requests.post(notify_url, json=notify_body, headers=notify_headers)
+            notify_response.raise_for_status()
+            print("[Wave] Successfully notified backend of wave status")
+            return True
+        except requests.exceptions.RequestException as e:
+            print(f"[Wave] Failed to notify backend: {e}")
+            return False
+
     def start_polling(self):
         while True:
             self.get_state()

@@ -127,6 +127,36 @@ def store_control():
         print(f"Error sending light {state} request: {str(e)}")
         return jsonify({"success": False, "message": response.json().get('message', 'Light state changed')})
 
+@app.route('/wave/auth', methods=['POST'])
+def wave_auth():
+    data = request.json
+    access_token = data.get('access_token')
+    if not access_token:
+        return jsonify({"success": False, "message": "Access token is required"}), 400
+    result = requests.post('http://wave:1234/auth', json={'access_token': access_token})
+    return jsonify({"success": result.json().get('success', False)})
+    
+@app.route('/wave/status', methods=['GET', 'POST'])
+def wave_status():
+    if request.method == 'GET':
+        try:
+            response = requests.get('http://wave:1234/status')
+            response.raise_for_status()
+            return jsonify({"status": response.json().get('status', ''), "success": True})
+        except requests.RequestException as e:
+            print(f"Error getting wave status: {str(e)}")
+            return jsonify({"status": "error", "message": "Failed to get wave status", "success": False}), 500
+    elif request.method == 'POST':
+        data = request.json
+        status = data.get('status')
+        if not status:
+            return jsonify({"success": False, "message": "Status is required"}), 400
+        success = byf_client.notify_wave_status(status)
+        if success:
+            return jsonify({"success": True})
+        else:
+            return jsonify({"success": False}), 500
+
 if __name__ == '__main__':
     # Start receipt & label printer status checking in a separate thread
     threading.Thread(target=receipt_printer_manager.start_status_checking, daemon=True).start()
