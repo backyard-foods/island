@@ -130,12 +130,19 @@ def store_control():
 @app.route('/wave/auth', methods=['POST'])
 def wave_auth():
     data = request.json
+    print(f"Received wave auth request: {data}")
     access_token = data.get('access_token')
+    print(f"Received access token: {access_token}")
     if not access_token:
         return jsonify({"success": False, "message": "Access token is required"}), 400
-    result = requests.post('http://wave:1234/auth', json={'access_token': access_token})
-    return jsonify({"success": result.json().get('success', False)})
-    
+    try:
+        result = requests.post('http://wave:1234/auth', json={'access_token': access_token}, timeout=5)
+        result.raise_for_status()  # Raises an HTTPError for bad responses (4xx or 5xx)
+        return jsonify({"success": result.json().get('success', False), "message": result.json().get('message', 'Authentication completed')})
+    except requests.exceptions.RequestException as e:
+        print(f"Error during Wave authentication: {str(e)}")
+        return jsonify({"success": False, "message": f"Wave authentication failed: {str(e)}"}), 500
+
 @app.route('/wave/status', methods=['GET', 'POST'])
 def wave_status():
     if request.method == 'GET':

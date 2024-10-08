@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, request
 from spotify_manager import SpotifyManager
+import threading
 
 
 app = Flask(__name__)
@@ -19,5 +20,5 @@ def status():
     return jsonify({"status": spotify_manager.get_status()})
 
 if __name__ == '__main__':
-    spotify_manager.start_from_cache()
+    threading.Thread(target=spotify_manager.start_from_cache, daemon=True).start()
     app.run(host='0.0.0.0', port=1234)

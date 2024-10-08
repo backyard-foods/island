@@ -21,7 +21,8 @@ MAX_RETRIES = 5
 RETRY_WINDOW_SECONDS = 600
 ACCESS_TOKEN_CACHE_SECONDS = 900
 
-STATUS_NOTIFICATION_RETRY_INTERVAL_SECONDS = 30
+STATUS_NOTIFICATION_ERROR_INTERVAL_SECONDS = 5
+STATUS_NOTIFICATION_HEARTBEAT_INTERVAL_SECONDS = 300
 
 class SpotifyStatus(Enum):
     STOPPED = "stopped"
@@ -107,7 +108,6 @@ class SpotifyManager:
             if time.time() - start_time > 5:
                 print(f"{LOG_PREFIX} Timeout waiting for authentication success")
                 self.update_status(SpotifyStatus.NEEDS_AUTH)
-                return self.retry()
             time.sleep(0.1)
         
         if self.status == SpotifyStatus.RUNNING:
@@ -154,8 +154,14 @@ class SpotifyManager:
                         self.update_status(SpotifyStatus.ERROR)
                     print(f"{LOG_PREFIX} Failed to restart process. Stopping monitor.")
                     break
-            if not self.last_notification_success and time.time() - self.last_notification_attempt > STATUS_NOTIFICATION_RETRY_INTERVAL_SECONDS:
+            if not self.last_notification_success and time.time() - self.last_notification_attempt > STATUS_NOTIFICATION_ERROR_INTERVAL_SECONDS:
                 print(f"{LOG_PREFIX} Retrying failed status notification")
+                self.notify_status()
+            elif self.status == SpotifyStatus.NEEDS_AUTH and time.time() - self.last_notification_attempt > STATUS_NOTIFICATION_ERROR_INTERVAL_SECONDS:
+                print(f"{LOG_PREFIX} Retrying needs_auth status notification")
+                self.notify_status()
+            elif time.time() - self.last_notification_attempt > STATUS_NOTIFICATION_HEARTBEAT_INTERVAL_SECONDS:
+                print(f"{LOG_PREFIX} Sending status notification heartbeat")
                 self.notify_status()
             time.sleep(1)
         print(f"{LOG_PREFIX} Spotify process status monitoring stopped")
