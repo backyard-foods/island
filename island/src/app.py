@@ -74,6 +74,12 @@ def print_label():
     
     return jsonify({"success": True, "message": "Label print job started"})
 
+@app.route('/label/print_text')
+def print_text():
+    text = request.args.get('text')
+    label_printer_manager.print_text(text)
+    return jsonify({"success": True, "message": "Text print job started"})
+
 @app.route('/receipt/reload')
 def reload_receipt_paper():
     success = receipt_printer_manager.reload_paper()

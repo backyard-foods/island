@@ -74,6 +74,23 @@ class LabelPrinterManager:
                 print(f"{LOG_PREFIX} {self.last_log}")
                 self.end_print_job()
                 return False
+            
+    def print_text(self, text):
+        print(f"{LOG_PREFIX} Printing text: {text}")
+        with self.lock:
+            self.throttle()
+            try:
+                self.printer.open()
+                self.printer.ln(4)
+                self.printer.set(align='center', double_height=True, double_width=True, bold=True, density=3)
+                self.printer.text(text)
+                self.printer.ln(4)
+                self.printer.set(align='center', normal_textsize=True)
+                self.printer.cut()
+                self.printer.close()
+            except Exception as e:
+                self.last_log = f"Print text error: {str(e)}"
+                print(f"{LOG_PREFIX} {self.last_log}")
     
     def start_print_job(self):
         self.printer.open()
