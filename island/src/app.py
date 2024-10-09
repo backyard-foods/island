@@ -74,6 +74,12 @@ def print_label():
     
     return jsonify({"success": True, "message": "Label print job started"})
 
+@app.route('/label/print_text')
+def print_text():
+    text = request.args.get('text')
+    label_printer_manager.print_text(text)
+    return jsonify({"success": True, "message": "Text print job started"})
+
 @app.route('/receipt/reload')
 def reload_receipt_paper():
     success = receipt_printer_manager.reload_paper()
@@ -126,6 +132,43 @@ def store_control():
     except requests.RequestException as e:
         print(f"Error sending light {state} request: {str(e)}")
         return jsonify({"success": False, "message": response.json().get('message', 'Light state changed')})
+
+@app.route('/wave/auth', methods=['POST'])
+def wave_auth():
+    data = request.json
+    print(f"Received wave auth request: {data}")
+    access_token = data.get('access_token')
+    print(f"Received access token: {access_token}")
+    if not access_token:
+        return jsonify({"success": False, "message": "Access token is required"}), 400
+    try:
+        result = requests.post('http://wave:1234/auth', json={'access_token': access_token}, timeout=5)
+        result.raise_for_status()  # Raises an HTTPError for bad responses (4xx or 5xx)
+        return jsonify({"success": result.json().get('success', False), "message": result.json().get('message', 'Authentication completed')})
+    except requests.exceptions.RequestException as e:
+        print(f"Error during Wave authentication: {str(e)}")
+        return jsonify({"success": False, "message": f"Wave authentication failed: {str(e)}"}), 500
+
+@app.route('/wave/status', methods=['GET', 'POST'])
+def wave_status():
+    if request.method == 'GET':
+        try:
+            response = requests.get('http://wave:1234/status')
+            response.raise_for_status()
+            return jsonify({"status": response.json().get('status', ''), "success": True})
+        except requests.RequestException as e:
+            print(f"Error getting wave status: {str(e)}")
+            return jsonify({"status": "error", "message": "Failed to get wave status", "success": False}), 500
+    elif request.method == 'POST':
+        data = request.json
+        status = data.get('status')
+        if not status:
+            return jsonify({"success": False, "message": "Status is required"}), 400
+        success = byf_client.notify_wave_status(status)
+        if success:
+            return jsonify({"success": True})
+        else:
+            return jsonify({"success": False}), 500
 
 if __name__ == '__main__':
     # Start receipt & label printer status checking in a separate thread

@@ -1,5 +1,6 @@
 version: "2"
-
+volumes:
+  spotify-cache:
 services:
   island:
     build: ./island
@@ -37,3 +38,9 @@ services:
       - NET_ADMIN
     labels:
       io.balena.features.dbus: 1
+  wave:
+    build: ./wave
+    restart: always
+    privileged: true
+    volumes:
+      - spotify-cache:/spotify-cache
