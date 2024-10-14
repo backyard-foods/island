@@ -39,11 +39,11 @@ def get_label_printer_status():
 def print_receipt():
     order = request.args.get('order', '00')
     message = request.args.get('message', '')
-    skus = request.args.get('skus', ['1'])
+    upcs = request.args.get('upcs', [])
     details = request.args.get('details', '3 Tender Combo')
     
     # Start the print job in a separate thread
-    threading.Thread(target=receipt_printer_manager.print_receipt, args=(order, skus, details, message), daemon=True).start()
+    threading.Thread(target=receipt_printer_manager.print_receipt, args=(order, upcs, details, message), daemon=True).start()
     
     if 'trigger' in request.args:
         if request.args.get('image') == 'true':

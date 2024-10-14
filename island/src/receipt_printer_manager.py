@@ -59,7 +59,7 @@ class ReceiptPrinterManager:
             print(f"{LOG_PREFIX} Throttled for {self.cooldown - elapsed_time} seconds")
         self.last_request_time = time.time()
 
-    def print_receipt(self, order, skus, details, message):
+    def print_receipt(self, order, upcs, details, message):
         
         with self.lock:
             self.throttle()
@@ -79,14 +79,14 @@ class ReceiptPrinterManager:
                 if(details):
                     self.print_details(details)
                 
-                if(skus):
+                if(upcs):
                     try:
-                        skus = json.loads(skus)
+                        upcs = json.loads(upcs)
                     except json.JSONDecodeError:
-                        print(f"{LOG_PREFIX} Error: Invalid SKU format. Received: {skus}")
-                        skus = []
-                    for sku in skus:
-                        self.print_barcode(sku)
+                        print(f"{LOG_PREFIX} Error: Invalid UPC format. Received: {upcs}")
+                        upcs = []
+                    for upc in upcs:
+                        self.print_barcode(upc)
                 
                 if(message):
                     self.print_message(message)
@@ -125,7 +125,7 @@ class ReceiptPrinterManager:
         self.clear_receipt_data_buffer()
 
     def print_heading(self, order):
-        self.printer.ln(2)
+        #self.printer.ln(2)
         self.printer.set(align='center', double_height=True, double_width=True, bold=True, density=3)
         self.printer.text(format_string(f"Order #: {str(order).title()}", True))
         self.clear_receipt_data_buffer()
@@ -135,11 +135,16 @@ class ReceiptPrinterManager:
         self.printer.set(align='center', normal_textsize=True)
         self.printer.text(format_string(details, False))
 
-    def print_barcode(self, sku):
+    def print_barcode(self, upc):
+        upc_str = str(upc)
+
+        if not upc_str.isdigit() or len(upc_str) != 12:
+            print(f"{LOG_PREFIX} Error: Invalid UPC format. Received: {upc}")
+            self.print_message("Invalid UPC")
+            return
+        
         self.printer.ln(2)
-        sku_str = str(sku).zfill(12)[-12:]
-        fake_ean13_code = f'9{sku_str}'
-        self.printer.barcode(fake_ean13_code, 'EAN13', 64, 2, '', '')
+        self.printer.barcode(upc_str, 'UPC-A', 64, 2, '', 'A', True, 'B')
         self.clear_receipt_data_buffer()
     
     def print_message(self, message):
