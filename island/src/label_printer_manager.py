@@ -36,8 +36,8 @@ class LabelPrinterManager:
             print(f"{LOG_PREFIX} Throttled for {self.cooldown - elapsed_time} seconds")
         self.last_request_time = time.time()
 
-    def print_label(self, order, item, item_number, item_total, fulfillment=None):
-        print(f"{LOG_PREFIX} Printing label for order: {order}, item: {item}, item_number: {item_number}, item_total: {item_total}, fulfillment: {fulfillment}")
+    def print_label(self, order, item, upc, item_number, item_total, fulfillment=None):
+        print(f"{LOG_PREFIX} Printing label for order: {order}, item: {item}, upc: {upc}, item_number: {item_number}, item_total: {item_total}, fulfillment: {fulfillment}")
         with self.lock:
             self.throttle()
 
@@ -58,6 +58,9 @@ class LabelPrinterManager:
                         self.print_count(item_number, item_total)
                 except ValueError:
                     print(f"{LOG_PREFIX} Invalid item_total value: {item_total}")
+                
+                if(upc):
+                    self.print_barcode(upc)
                 
                 self.end_print_job()
                 
@@ -116,6 +119,18 @@ class LabelPrinterManager:
         self.printer.ln(2)
         self.printer.set(align='center', normal_textsize=True)
         self.printer.text(format_string(f"({item_number} of {item_total})", False))
+
+    def print_barcode(self, upc):
+        upc_str = str(upc)
+
+        if not upc_str.isdigit() or len(upc_str) != 12:
+            print(f"{LOG_PREFIX} Error: Invalid UPC format. Received: {upc}")
+            self.print_message("Invalid UPC")
+            return
+        
+        self.printer.ln(2)
+        self.printer.barcode(upc_str, 'UPC-A', 64, 2, '', 'A', True, 'B')
+        self.clear_label_data_buffer()
 
     def clear_label_data_buffer(self):
         time.sleep(0.3)

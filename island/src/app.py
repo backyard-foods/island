@@ -57,14 +57,15 @@ def print_receipt():
 def print_label():
     order = request.args.get('order', '00')
     item = request.args.get('item', '3 Tender Combo')
+    upc = request.args.get('upc', '')
     item_number = request.args.get('item_number', '1')
     item_total = request.args.get('item_total', '1')
     fulfillment = request.args.get('fulfillment')
 
     if fulfillment:
-        threading.Thread(target=label_printer_manager.print_label, args=(order, item, item_number, item_total, fulfillment), daemon=True).start()
+        threading.Thread(target=label_printer_manager.print_label, args=(order, item, upc, item_number, item_total, fulfillment), daemon=True).start()
     else:
-        threading.Thread(target=label_printer_manager.print_label, args=(order, item, item_number, item_total), daemon=True).start()
+        threading.Thread(target=label_printer_manager.print_label, args=(order, item, upc, item_number, item_total), daemon=True).start()
 
     if 'trigger' in request.args:
         if request.args.get('image') == 'true':

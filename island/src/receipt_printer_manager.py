@@ -111,7 +111,7 @@ class ReceiptPrinterManager:
         print(f"{LOG_PREFIX} Printing")
 
     def end_print_job(self):
-        self.printer.ln(2)
+        self.printer.ln(1)
         self.printer.cut()
         self.printer.close()
 
@@ -125,7 +125,7 @@ class ReceiptPrinterManager:
         self.clear_receipt_data_buffer()
 
     def print_heading(self, order):
-        #self.printer.ln(2)
+        self.printer.ln(1)
         self.printer.set(align='center', double_height=True, double_width=True, bold=True, density=3)
         self.printer.text(format_string(f"Order #: {str(order).title()}", True))
         self.clear_receipt_data_buffer()
