@@ -41,9 +41,10 @@ def print_receipt():
     message = request.args.get('message', '')
     upcs = request.args.get('upcs', [])
     details = request.args.get('details', '3 Tender Combo')
+    wait = request.args.get('wait', None)
     
     # Start the print job in a separate thread
-    threading.Thread(target=receipt_printer_manager.print_receipt, args=(order, upcs, details, message), daemon=True).start()
+    threading.Thread(target=receipt_printer_manager.print_receipt, args=(order, upcs, details, message, wait), daemon=True).start()
     
     if 'trigger' in request.args:
         if request.args.get('image') == 'true':

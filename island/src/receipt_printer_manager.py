@@ -59,7 +59,7 @@ class ReceiptPrinterManager:
             print(f"{LOG_PREFIX} Throttled for {self.cooldown - elapsed_time} seconds")
         self.last_request_time = time.time()
 
-    def print_receipt(self, order, upcs, details, message):
+    def print_receipt(self, order, upcs, details, message, wait):
         
         with self.lock:
             self.throttle()
@@ -78,6 +78,11 @@ class ReceiptPrinterManager:
 
                 if(details):
                     self.print_details(details)
+                
+                if(wait):
+                    self.print_message(f"Pay at register. Your order will be ready in {wait} minutes.")
+                else:
+                    self.print_message("Pay at register")
                 
                 if(upcs):
                     try:
