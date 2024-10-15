@@ -133,7 +133,7 @@ def store_control():
         return jsonify({"success": True, "message": response.json().get('message', 'Light state changed')})
     except requests.RequestException as e:
         print(f"Error sending light {state} request: {str(e)}")
-        return jsonify({"success": False, "message": response.json().get('message', 'Light state changed')})
+        return jsonify({"success": False})
 
 @app.route('/wave/auth', methods=['POST'])
 def wave_auth():

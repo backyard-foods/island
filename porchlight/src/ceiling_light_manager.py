@@ -1,14 +1,15 @@
 import RPi.GPIO as GPIO
+import os
 
 LOG_PREFIX = "[ceiling-light]"
 
-LIGHT_PIN = 26
+LIGHT_PIN = int(os.environ['CEILING_LIGHT_GPIO_PIN'])
 
 class CeilingLightManager:
     def __init__(self):
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(LIGHT_PIN, GPIO.OUT, initial=GPIO.LOW)
-
+        
     def is_on(self):
         try:
             return GPIO.input(LIGHT_PIN) == GPIO.HIGH
