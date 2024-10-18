@@ -9,6 +9,7 @@ LOG_PREFIX = "[label-printer]"
 FEEDBACK_URL = "https://backyardfoods.com/feedback"
 # ~270x50 PNG, black on transparent
 LOGO_PATH = "receipt-logo.png"
+LOGO_FRAGMENT_HEIGHT = 20
 
 # TM-L00 printer
 MAKE = 0x04b8
@@ -122,7 +123,7 @@ class LabelPrinterManager:
                            high_density_vertical=True, 
                            high_density_horizontal=True, 
                            impl='bitImageRaster', 
-                           fragment_height=20, 
+                           fragment_height=LOGO_FRAGMENT_HEIGHT, 
                            center=False)
         self.clear_label_data_buffer()
 

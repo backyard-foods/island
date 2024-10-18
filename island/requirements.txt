@@ -6,7 +6,7 @@ Jinja2==3.0.3
 MarkupSafe==2.0.1
 Werkzeug==2.0.3
 zipp==3.6.0
-python-escpos==3.1
+git+https://github.com/milan-kodali/python-escpos.git@master#egg=python-escpos
 pyusb==1.2.1
 pillow==9.5.0
 requests==2.31.0

@@ -8,6 +8,8 @@ from utils import restart_container, format_string
 LOG_PREFIX = "[receipt-printer]"
 # ~270x50 PNG, black on transparent
 LOGO_PATH = "receipt-logo.png"
+LOGO_FRAGMENT_HEIGHT = 2
+LOGO_SLEEP_BETWEEN_FRAGMENTS_MS = 10
 
 MAKE = 0x04b8 # Epson
 MODELS = [0x0e2e, 0x0202] # Supported models: EU-m30, TM-T88IV
@@ -77,7 +79,7 @@ class ReceiptPrinterManager:
             try:
                 self.start_print_job()
                 self.print_logo()
-                
+
                 if(order):
                     self.print_heading(order)
 
@@ -118,6 +120,7 @@ class ReceiptPrinterManager:
     
     def start_print_job(self):
         self.printer.open()
+        self.printer.set_sleep_in_fragment(LOGO_SLEEP_BETWEEN_FRAGMENTS_MS)
         self.printer.set(align='center')
         print(f"{LOG_PREFIX} Printing")
 
@@ -131,9 +134,11 @@ class ReceiptPrinterManager:
                            high_density_vertical=True, 
                            high_density_horizontal=True, 
                            impl='bitImageRaster', 
-                           fragment_height=20, 
+                           fragment_height=LOGO_FRAGMENT_HEIGHT, 
                            center=False)
         self.clear_receipt_data_buffer()
+        self.clear_receipt_data_buffer()
+
 
     def print_heading(self, order):
         self.printer.ln(1)
@@ -145,6 +150,7 @@ class ReceiptPrinterManager:
         self.printer.ln(2)
         self.printer.set(align='center', normal_textsize=True)
         self.printer.text(format_string(details, False))
+        self.clear_receipt_data_buffer()
 
     def print_barcode(self, upc):
         upc_str = str(upc)
@@ -162,6 +168,7 @@ class ReceiptPrinterManager:
         self.printer.ln(2)
         self.printer.set(align='center', normal_textsize=True)
         self.printer.text(format_string(message, False))
+        self.clear_receipt_data_buffer()
 
     def clear_receipt_data_buffer(self):
         time.sleep(0.3)
