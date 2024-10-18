@@ -1,11 +1,13 @@
 import time
 from escpos.printer import Usb
+from escpos.constants import QR_ECLEVEL_Q, QR_ECLEVEL_H, QR_ECLEVEL_M, QR_ECLEVEL_L
 from escpos.exceptions import DeviceNotFoundError
 #from PIL import Image
 import threading
 from utils import restart_container, format_string
 
 LOG_PREFIX = "[label-printer]"
+FEEDBACK_URL = "https://backyardfoods.com/feedback"
 
 # TM-L00 printer
 MAKE = 0x04b8
@@ -67,6 +69,9 @@ class LabelPrinterManager:
                 if(upc):
                     self.print_barcode(upc)
                 
+                if fulfillment and item:
+                    self.print_qr(fulfillment, item)
+
                 self.end_print_job()
                 
                 if fulfillment:
@@ -105,12 +110,11 @@ class LabelPrinterManager:
         print(f"{LOG_PREFIX} Printing")
 
     def end_print_job(self):
-        self.printer.ln(2)
         self.printer.cut()
         self.printer.close()
 
     def print_heading(self, order):
-        self.printer.ln(2)
+        self.printer.ln(1)
         self.printer.set(align='center', double_height=True, double_width=True, bold=True, density=3)
         self.printer.text(format_string(f"Order #: {str(order).title()}", True))
         self.clear_label_data_buffer()
@@ -135,6 +139,15 @@ class LabelPrinterManager:
         
         self.printer.ln(2)
         self.printer.barcode(upc_str, 'UPC-A', 64, 2, '', 'A', True, 'B')
+        self.clear_label_data_buffer()
+
+    def print_qr(self, fulfillment, item):
+        self.printer.ln(2)
+        self.printer.set(align='center', normal_textsize=True)
+        self.printer.text("How was your order? Scan to let us know:")
+        self.printer.ln(1)
+        self.printer.qr(content=f"{FEEDBACK_URL}?meta={fulfillment}&item={item}", ec=QR_ECLEVEL_M, size=4, model=2, native=True, center=False, impl=None, image_arguments=None)
+        #self.printer.qr(content=f"{FEEDBACK_URL}?meta={fulfillment}&item={item}", ec=QR_ECLEVEL_H, size=4, model=2, native=True, center=False, impl=None, image_arguments=None)
         self.clear_label_data_buffer()
 
     def clear_label_data_buffer(self):
