@@ -12,13 +12,14 @@ MAKE = 0x04b8
 MODEL = 0x0e31
 PROFILE = "TM-L90"  # Wrong profile for the TM-L00, but no issues so far
 POLL_INTERVAL = 30
-COOLDOWN = 5
+PRINT_COOLDOWN = 4
+POLL_COOLDOWN = 1
 
 class LabelPrinterManager:
     def __init__(self, byf_client):
         self.poll_interval = POLL_INTERVAL
         self.printer = Usb(idVendor=MAKE, idProduct=MODEL, usb_args={}, timeout=self.poll_interval, profile=PROFILE)
-        self.cooldown = COOLDOWN
+        self.cooldown = PRINT_COOLDOWN
         self.last_request_time = 0
         self.lock = threading.Lock()
         self.status = "Unknown"
@@ -28,13 +29,17 @@ class LabelPrinterManager:
     def get_status(self):
         return self.status
 
-    def throttle(self):
+    def throttle(self, printing=True):
         current_time = time.time()
         elapsed_time = current_time - self.last_request_time
         if elapsed_time < self.cooldown:
             time.sleep(self.cooldown - elapsed_time)
             print(f"{LOG_PREFIX} Throttled for {self.cooldown - elapsed_time} seconds")
         self.last_request_time = time.time()
+        if printing:
+            self.cooldown = PRINT_COOLDOWN
+        else:
+            self.cooldown = POLL_COOLDOWN
 
     def print_label(self, order, item, upc, item_number, item_total, fulfillment=None):
         print(f"{LOG_PREFIX} Printing label for order: {order}, item: {item}, upc: {upc}, item_number: {item_number}, item_total: {item_total}, fulfillment: {fulfillment}")
@@ -153,7 +158,7 @@ class LabelPrinterManager:
 
     def check_status(self):
         with self.lock:
-            self.throttle()
+            self.throttle(printing=False)
             try:
                 print(f"{LOG_PREFIX} Checking status, last status: {self.status}")
                 prev_status = self.status

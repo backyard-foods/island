@@ -14,12 +14,13 @@ MODELS = [0x0e2e, 0x0202] # Supported models: EU-m30, TM-T88IV
 PROFILE = "TM-T88IV"
 
 POLL_INTERVAL = 30
-COOLDOWN = 5
+PRINT_COOLDOWN = 4
+POLL_COOLDOWN = 1
 
 class ReceiptPrinterManager:
     def __init__(self, byf_client):
         self.poll_interval = POLL_INTERVAL
-        self.cooldown = COOLDOWN
+        self.cooldown = PRINT_COOLDOWN
         self.last_request_time = 0
         self.lock = threading.Lock()
         self.status = "offline"
@@ -51,13 +52,17 @@ class ReceiptPrinterManager:
     def get_status(self):
         return self.status
 
-    def throttle(self):
+    def throttle(self, printing=True):
         current_time = time.time()
         elapsed_time = current_time - self.last_request_time
         if elapsed_time < self.cooldown:
             time.sleep(self.cooldown - elapsed_time)
             print(f"{LOG_PREFIX} Throttled for {self.cooldown - elapsed_time} seconds")
         self.last_request_time = time.time()
+        if printing:
+            self.cooldown = PRINT_COOLDOWN
+        else:
+            self.cooldown = POLL_COOLDOWN
 
     def print_receipt(self, order, upcs, details, message, wait):
         
@@ -178,7 +183,7 @@ class ReceiptPrinterManager:
 
     def check_status(self):
         with self.lock:
-            self.throttle()
+            self.throttle(printing=False)
             try:
                 print(f"{LOG_PREFIX} Checking status, last status: {self.status}")
                 prev_status = self.status
