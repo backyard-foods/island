@@ -59,8 +59,8 @@ def print_label():
     order = request.args.get('order', '00')
     item = request.args.get('item', '3 Tender Combo')
     upc = request.args.get('upc', '')
-    item_number = request.args.get('item_number', '1')
-    item_total = request.args.get('item_total', '1')
+    item_number = request.args.get('item_number', '0')
+    item_total = request.args.get('item_total', '0')
     fulfillment = request.args.get('fulfillment')
 
     if fulfillment:

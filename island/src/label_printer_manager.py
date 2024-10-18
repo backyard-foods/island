@@ -58,19 +58,20 @@ class LabelPrinterManager:
                     self.print_heading(order)
 
                 if(item):
-                    self.print_details(item)
-                
-                try:
-                    if(int(item_total) > 1 and int(item_number) > 0):
-                        self.print_count(item_number, item_total)
-                except ValueError:
-                    print(f"{LOG_PREFIX} Invalid item_total value: {item_total}")
-                
-                if(upc):
-                    self.print_barcode(upc)
+                    try:
+                        if(int(item_total) > 1 and int(item_number) > 0):
+                            self.print_details(item, item_number, item_total)
+                        else:
+                            self.print_details(item)
+                    except ValueError:
+                        self.print_details(item)
+                        print(f"{LOG_PREFIX} Invalid item_total value: {item_total}")
                 
                 if fulfillment and item:
                     self.print_qr(fulfillment, item)
+                
+                if(upc):
+                    self.print_barcode(upc)
 
                 self.end_print_job()
                 
@@ -119,10 +120,13 @@ class LabelPrinterManager:
         self.printer.text(format_string(f"Order #: {str(order).title()}", True))
         self.clear_label_data_buffer()
 
-    def print_details(self, details):
+    def print_details(self, item, item_number=None, item_total=None):
         self.printer.ln(2)
         self.printer.set(align='center', normal_textsize=True)
-        self.printer.text(format_string(details, False))
+        if item_number and item_total:
+            self.printer.text(format_string(f"{item} ({item_number} of {item_total})", False))
+        else:
+            self.printer.text(format_string(item, False))
 
     def print_count(self, item_number, item_total):
         self.printer.ln(2)
@@ -137,17 +141,16 @@ class LabelPrinterManager:
             self.print_message("Invalid UPC")
             return
         
-        self.printer.ln(2)
-        self.printer.barcode(upc_str, 'UPC-A', 64, 2, '', 'A', True, 'B')
+        #self.printer.ln(2)
+        self.printer.barcode(upc_str, 'UPC-A', 32, 2, '', 'A', True, 'B')
         self.clear_label_data_buffer()
 
     def print_qr(self, fulfillment, item):
-        self.printer.ln(2)
+        self.printer.ln(3)
         self.printer.set(align='center', normal_textsize=True)
         self.printer.text("How was your order? Scan to let us know:")
-        self.printer.ln(1)
-        self.printer.qr(content=f"{FEEDBACK_URL}?meta={fulfillment}&item={item}", ec=QR_ECLEVEL_M, size=4, model=2, native=True, center=False, impl=None, image_arguments=None)
-        #self.printer.qr(content=f"{FEEDBACK_URL}?meta={fulfillment}&item={item}", ec=QR_ECLEVEL_H, size=4, model=2, native=True, center=False, impl=None, image_arguments=None)
+        self.printer.ln(2)
+        self.printer.qr(content=f"{FEEDBACK_URL}?meta={fulfillment}&item={item}", ec=QR_ECLEVEL_M, size=5, model=2, native=True, center=False, impl=None, image_arguments=None)
         self.clear_label_data_buffer()
 
     def clear_label_data_buffer(self):
