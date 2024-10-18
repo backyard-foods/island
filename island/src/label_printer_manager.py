@@ -1,13 +1,14 @@
 import time
 from escpos.printer import Usb
-from escpos.constants import QR_ECLEVEL_Q, QR_ECLEVEL_H, QR_ECLEVEL_M, QR_ECLEVEL_L
+from escpos.constants import QR_ECLEVEL_M
 from escpos.exceptions import DeviceNotFoundError
-#from PIL import Image
 import threading
 from utils import restart_container, format_string
 
 LOG_PREFIX = "[label-printer]"
 FEEDBACK_URL = "https://backyardfoods.com/feedback"
+# ~270x50 PNG, black on transparent
+LOGO_PATH = "receipt-logo.png"
 
 # TM-L00 printer
 MAKE = 0x04b8
@@ -53,6 +54,7 @@ class LabelPrinterManager:
                 return False
             try:
                 self.start_print_job()
+                self.print_logo()
 
                 if(order):
                     self.print_heading(order)
@@ -108,11 +110,21 @@ class LabelPrinterManager:
     
     def start_print_job(self):
         self.printer.open()
+        self.printer.set(align='center')
         print(f"{LOG_PREFIX} Printing")
 
     def end_print_job(self):
         self.printer.cut()
         self.printer.close()
+
+    def print_logo(self):
+        self.printer.image(LOGO_PATH,
+                           high_density_vertical=True, 
+                           high_density_horizontal=True, 
+                           impl='bitImageRaster', 
+                           fragment_height=20, 
+                           center=False)
+        self.clear_label_data_buffer()
 
     def print_heading(self, order):
         self.printer.ln(1)
