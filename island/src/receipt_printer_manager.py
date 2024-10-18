@@ -1,13 +1,13 @@
 import time
 from escpos.printer import Usb
 from escpos.exceptions import DeviceNotFoundError
-#from PIL import Image
 import threading
 import json
-from byf_api_client import BYFAPIClient
 from utils import restart_container, format_string
 
 LOG_PREFIX = "[receipt-printer]"
+# ~270x50 PNG, black on transparent
+LOGO_PATH = "receipt-logo.png"
 
 MAKE = 0x04b8 # Epson
 MODELS = [0x0e2e, 0x0202] # Supported models: EU-m30, TM-T88IV
@@ -76,8 +76,8 @@ class ReceiptPrinterManager:
                 return False
             try:
                 self.start_print_job()
-                #self.print_logo()
-
+                self.print_logo()
+                
                 if(order):
                     self.print_heading(order)
 
@@ -118,6 +118,7 @@ class ReceiptPrinterManager:
     
     def start_print_job(self):
         self.printer.open()
+        self.printer.set(align='center')
         print(f"{LOG_PREFIX} Printing")
 
     def end_print_job(self):
@@ -126,12 +127,12 @@ class ReceiptPrinterManager:
         self.printer.close()
 
     def print_logo(self):
-        # Print logo
-        image = Image.open('logo_ready.bmp')
-        image = Image.open('logo.png')
-        image = image.convert('1')  # Convert to 1-bit black and white
-        image.save('logo_ready.bmp')  # Save it as BMP if needed
-        self.printer.image(image)
+        self.printer.image(LOGO_PATH,
+                           high_density_vertical=True, 
+                           high_density_horizontal=True, 
+                           impl='bitImageRaster', 
+                           fragment_height=20, 
+                           center=False)
         self.clear_receipt_data_buffer()
 
     def print_heading(self, order):
