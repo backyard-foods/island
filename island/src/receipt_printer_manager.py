@@ -18,6 +18,8 @@ LOGO_FRAGMENT_HEIGHT = 2
 LOGO_SLEEP_BETWEEN_FRAGMENTS_MS = 50
 SLEEP_BETWEEN_SEGMENTS_MS = 50
 
+FLIP_DIRECTION = False
+
 POLL_INTERVAL = 30
 PRINT_COOLDOWN = 4
 POLL_COOLDOWN = 1
@@ -123,7 +125,7 @@ class ReceiptPrinterManager:
     def start_print_job(self):
         self.printer.open()
         self.printer.set_sleep_in_fragment(LOGO_SLEEP_BETWEEN_FRAGMENTS_MS)
-        self.printer.set(align='center', flip=False)
+        self.printer.set(align='center', flip=FLIP_DIRECTION)
         print(f"{LOG_PREFIX} Printing")
 
     def end_print_job(self):
@@ -177,7 +179,6 @@ class ReceiptPrinterManager:
         self.clear_receipt_data_buffer()
 
     def clear_receipt_data_buffer(self):
-        print(f"{LOG_PREFIX} Clearing receipt data buffer")
         time.sleep(SLEEP_BETWEEN_SEGMENTS_MS/1000)
 
     def reload_paper(self):
