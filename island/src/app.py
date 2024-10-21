@@ -6,6 +6,8 @@ from byf_api_client import BYFAPIClient
 import requests
 import time
 
+RECEIPT_DEBUG_MODE = False
+
 app = Flask(__name__)
 byf_client = BYFAPIClient()
 receipt_printer_manager = ReceiptPrinterManager(byf_client)
@@ -173,15 +175,15 @@ def wave_status():
         else:
             return jsonify({"success": False}), 500
 
-def send_initial_print_request():
-    time.sleep(3)  # Wait for 5 seconds to ensure the app is fully loaded
-    print("Sending initial print request...")
+def send_receipt_debug_request():
+    time.sleep(2)
+    print("[RECEIPT_DEBUG_MODE] Sending debug print request...")
     try:
         response = requests.get('http://localhost/receipt/print?order=Channel+Islands&wait=30&upcs=%5B860012979325%2C860012979332%5D&details=6+Tender+Combo+-+%2412.99%0AJust+Fries+-+%242.99%0ATOTAL+-+%2415.98&image=true&trigger=order-created&message=Park+fact%3A+Channel+Islands+has+10%25+of+the+park%27s+species+found+nowhere+else+on+Earth')
         response.raise_for_status()
-        print("Initial print request sent successfully")
+        print("[RECEIPT_DEBUG_MODE] Debug print request sent successfully")
     except requests.RequestException as e:
-        print(f"Error sending initial print request: {str(e)}")
+        print(f"[RECEIPT_DEBUG_MODE] Error sending debug print request: {str(e)}")
 
 if __name__ == '__main__':
     # Start receipt & label printer status checking in a separate thread
@@ -189,7 +191,7 @@ if __name__ == '__main__':
     threading.Thread(target=label_printer_manager.start_status_checking, daemon=True).start()
     threading.Thread(target=byf_client.start_polling, daemon=True).start()
     
-    # Start a new thread for the initial print request
-    threading.Thread(target=send_initial_print_request, daemon=True).start()
+    if RECEIPT_DEBUG_MODE:
+        threading.Thread(target=send_receipt_debug_request, daemon=True).start()
     
     app.run(host='0.0.0.0', port=80)

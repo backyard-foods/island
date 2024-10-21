@@ -8,12 +8,15 @@ from utils import restart_container, format_string
 LOG_PREFIX = "[receipt-printer]"
 # ~270x50 PNG, black on transparent
 LOGO_PATH = "receipt-logo.png"
-LOGO_FRAGMENT_HEIGHT = 2
-LOGO_SLEEP_BETWEEN_FRAGMENTS_MS = 10
 
 MAKE = 0x04b8 # Epson
 MODELS = [0x0e2e, 0x0202] # Supported models: EU-m30, TM-T88IV
 PROFILE = "TM-T88IV"
+
+#EU-m30 Settings
+LOGO_FRAGMENT_HEIGHT = 2
+LOGO_SLEEP_BETWEEN_FRAGMENTS_MS = 50
+SLEEP_BETWEEN_SEGMENTS_MS = 50
 
 POLL_INTERVAL = 30
 PRINT_COOLDOWN = 4
@@ -67,7 +70,6 @@ class ReceiptPrinterManager:
             self.cooldown = POLL_COOLDOWN
 
     def print_receipt(self, order, upcs, details, message, wait):
-        
         with self.lock:
             self.throttle()
 
@@ -121,7 +123,7 @@ class ReceiptPrinterManager:
     def start_print_job(self):
         self.printer.open()
         self.printer.set_sleep_in_fragment(LOGO_SLEEP_BETWEEN_FRAGMENTS_MS)
-        self.printer.set(align='center')
+        self.printer.set(align='center', flip=False)
         print(f"{LOG_PREFIX} Printing")
 
     def end_print_job(self):
@@ -130,6 +132,7 @@ class ReceiptPrinterManager:
         self.printer.close()
 
     def print_logo(self):
+        print(f"{LOG_PREFIX} Printing logo")
         self.printer.image(LOGO_PATH,
                            high_density_vertical=True, 
                            high_density_horizontal=True, 
@@ -137,22 +140,24 @@ class ReceiptPrinterManager:
                            fragment_height=LOGO_FRAGMENT_HEIGHT, 
                            center=False)
         self.clear_receipt_data_buffer()
-        self.clear_receipt_data_buffer()
 
 
     def print_heading(self, order):
+        print(f"{LOG_PREFIX} Printing heading")
         self.printer.ln(1)
         self.printer.set(align='center', double_height=True, double_width=True, bold=True, density=3)
         self.printer.text(format_string(f"Order #: {str(order).title()}", True))
         self.clear_receipt_data_buffer()
 
     def print_details(self, details):
+        print(f"{LOG_PREFIX} Printing details")
         self.printer.ln(2)
         self.printer.set(align='center', normal_textsize=True)
         self.printer.text(format_string(details, False))
         self.clear_receipt_data_buffer()
 
     def print_barcode(self, upc):
+        print(f"{LOG_PREFIX} Printing barcode")
         upc_str = str(upc)
 
         if not upc_str.isdigit() or len(upc_str) != 12:
@@ -165,13 +170,15 @@ class ReceiptPrinterManager:
         self.clear_receipt_data_buffer()
     
     def print_message(self, message):
+        print(f"{LOG_PREFIX} Printing message")
         self.printer.ln(2)
         self.printer.set(align='center', normal_textsize=True)
         self.printer.text(format_string(message, False))
         self.clear_receipt_data_buffer()
 
     def clear_receipt_data_buffer(self):
-        time.sleep(0.3)
+        print(f"{LOG_PREFIX} Clearing receipt data buffer")
+        time.sleep(SLEEP_BETWEEN_SEGMENTS_MS/1000)
 
     def reload_paper(self):
         with self.lock:
