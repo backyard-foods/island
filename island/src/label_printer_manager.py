@@ -3,7 +3,7 @@ from escpos.printer import Usb
 from escpos.constants import QR_ECLEVEL_M
 from escpos.exceptions import DeviceNotFoundError
 import threading
-from utils import restart_container, format_string
+from utils import restart_service, restart_container, format_string
 
 LOG_PREFIX = "[label-printer]"
 FEEDBACK_URL = "https://backyardfoods.com/feedback"
@@ -14,7 +14,7 @@ LOGO_FRAGMENT_HEIGHT = 20
 # TM-L00 printer
 MAKE = 0x04b8
 MODEL = 0x0e31
-PROFILE = "TM-L90"  # Wrong profile for the TM-L00, but no issues so far
+PROFILE = "TM-L90"  # Wrong profile for the TM-L100, but no issues so far
 POLL_INTERVAL = 30
 PRINT_COOLDOWN = 4
 POLL_COOLDOWN = 1
@@ -29,6 +29,65 @@ class LabelPrinterManager:
         self.status = "Unknown"
         self.last_log = ""
         self.byf_client = byf_client
+
+    def configure_printer(self):
+        print(f"{LOG_PREFIX} Configuring printer")
+
+        gs = b'\x1D' # prefix for GS commands
+        e_command = b'\x28\x45'  # prefix for GS ( E commands
+
+        # Function 1 - Open User Setting Mode 
+        pL = b'\x03' # data length low byte
+        pH = b'\x00' # data length high byte
+        fn = b'\x01' # function code 1
+        d1 = b'\x49' # data 1: character "I"
+        d2 = b'\x4E' # data 2: character "N"
+        print(f"{LOG_PREFIX} Sending 'Open User Setting' command: {gs + e_command + pL + pH + fn + d1 + d2}")
+        self.printer._raw(gs + e_command + pL + pH + fn + d1 + d2)
+        self.clear_label_data_buffer()
+
+        # Function 5 - 119: Set Buzzer Mode
+        pL = b'\x04' # data length low byte
+        pH = b'\x00' # data length high byte
+        fn = b'\x05' # function code 5
+        a = b'\x77' # buzzer setting (119)
+        nL = b'\x00' #0 for off, 1 for external, 2 for internal
+        nH = b'\x00'
+        print(f"{LOG_PREFIX} Sending 'Set Buzzer Mode' command: {gs + e_command + pL + pH + fn + a + nL + nH}")
+        self.printer._raw(gs + e_command + pL + pH + fn + a + nL + nH)
+        self.clear_label_data_buffer()
+
+        # Function 5 - 14: Turn off paper removal standby
+        pL = b'\x04' # data length low byte
+        pH = b'\x00' # data length high byte
+        fn = b'\x05' # function code 5
+        a = b'\x0E' # buzzer setting (14)
+        nL = b'\x00' #0 (x00) for off, 64 (x40) for on
+        nH = b'\x00'
+        print(f"{LOG_PREFIX} Sending 'Turn off paper removal standby' command: {gs + e_command + pL + pH + fn + a + nL + nH}")
+        self.printer._raw(gs + e_command + pL + pH + fn + a + nL + nH)
+        self.clear_label_data_buffer()
+
+        # Function 2 - Close User Setting Mode 
+        pL = b'\x04' # data length low byte
+        pH = b'\x00' # data length high byte
+        fn = b'\x02' # function code 2
+        d1 = b'\x4F' # data 1: character "O"
+        d2 = b'\x55' # data 2: character "U"
+        d3 = b'\x54' # data 3: character "T"
+        print(f"{LOG_PREFIX} Sending 'Close User Setting' command: {gs + e_command + pL + pH + fn + d1 + d2 + d3}")
+        self.printer._raw(gs + e_command + pL + pH + fn + d1 + d2 + d3)
+        self.clear_label_data_buffer()
+
+        self.printer.close()
+
+        sleep_time = 15
+        for i in range(sleep_time):
+            print(f"{LOG_PREFIX} Waiting... {i+1}/{sleep_time} seconds")
+            time.sleep(1)
+
+        print(f"{LOG_PREFIX} Restarting island service")
+        restart_service()
 
     def get_status(self):
         return self.status

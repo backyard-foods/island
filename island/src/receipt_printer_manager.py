@@ -18,8 +18,6 @@ LOGO_FRAGMENT_HEIGHT = 2
 LOGO_SLEEP_BETWEEN_FRAGMENTS_MS = 50
 SLEEP_BETWEEN_SEGMENTS_MS = 50
 
-FLIP_DIRECTION = False
-
 POLL_INTERVAL = 30
 PRINT_COOLDOWN = 4
 POLL_COOLDOWN = 1
@@ -82,18 +80,16 @@ class ReceiptPrinterManager:
                 return False
             try:
                 self.start_print_job()
-                self.print_logo()
-
-                if(order):
-                    self.print_heading(order)
-
-                if(details):
-                    self.print_details(details)
-                
-                if(wait):
-                    self.print_message(f"Pay at register. Your order will be ready in {wait} minutes.")
+                instructions = ""
+                if wait:
+                    instructions = f"Pay at register. Your order will be ready in {wait} minutes."
                 else:
-                    self.print_message("Pay at register")
+                    instructions = "Pay at register"
+
+                self.print_logo()
+                self.print_heading(order)
+                self.print_details(details)
+                self.print_message(instructions)
                 
                 if(upcs):
                     try:
@@ -104,8 +100,7 @@ class ReceiptPrinterManager:
                     for upc in upcs:
                         self.print_barcode(upc)
                 
-                if(message):
-                    self.print_message(message)
+                self.print_message(message)
                 
                 self.end_print_job()
                 
@@ -125,8 +120,9 @@ class ReceiptPrinterManager:
     def start_print_job(self):
         self.printer.open()
         self.printer.set_sleep_in_fragment(LOGO_SLEEP_BETWEEN_FRAGMENTS_MS)
-        self.printer.set(align='center', flip=FLIP_DIRECTION)
+        self.printer.set(align='center', normal_textsize=True, flip=False)
         print(f"{LOG_PREFIX} Printing")
+        self.printer.ln(1)
 
     def end_print_job(self):
         self.printer.ln(1)
@@ -135,7 +131,8 @@ class ReceiptPrinterManager:
 
     def print_logo(self):
         print(f"{LOG_PREFIX} Printing logo")
-        self.printer.image(LOGO_PATH,
+        path = LOGO_PATH
+        self.printer.image(path,
                            high_density_vertical=True, 
                            high_density_horizontal=True, 
                            impl='bitImageRaster', 
@@ -145,38 +142,51 @@ class ReceiptPrinterManager:
 
 
     def print_heading(self, order):
-        print(f"{LOG_PREFIX} Printing heading")
-        self.printer.ln(1)
-        self.printer.set(align='center', double_height=True, double_width=True, bold=True, density=3)
-        self.printer.text(format_string(f"Order #: {str(order).title()}", True))
-        self.clear_receipt_data_buffer()
+        if order:
+            print(f"{LOG_PREFIX} Printing heading")
+            self.printer.ln(1)
+            self.printer.set(align='center', double_height=True, double_width=True, bold=True, density=3)
+            self.printer.text(format_string(f"Order #: {str(order).title()}", double_size=True, flip=False))
+            self.printer.set(align='center', normal_textsize=True, flip=False)
+            self.clear_receipt_data_buffer()
+        else:  
+            print(f"{LOG_PREFIX} No order provided, skipping heading")
 
     def print_details(self, details):
-        print(f"{LOG_PREFIX} Printing details")
-        self.printer.ln(2)
-        self.printer.set(align='center', normal_textsize=True)
-        self.printer.text(format_string(details, False))
-        self.clear_receipt_data_buffer()
+        if details:
+            print(f"{LOG_PREFIX} Printing details")
+            self.printer.ln(2)
+            self.printer.set(align='center', normal_textsize=True)
+            self.printer.text(format_string(details, double_size=False, flip=False))
+            self.clear_receipt_data_buffer()
+        else:
+            print(f"{LOG_PREFIX} No details provided, skipping details")
 
     def print_barcode(self, upc):
-        print(f"{LOG_PREFIX} Printing barcode")
-        upc_str = str(upc)
+        if upc:
+            print(f"{LOG_PREFIX} Printing barcode")
+            upc_str = str(upc)
 
-        if not upc_str.isdigit() or len(upc_str) != 12:
-            print(f"{LOG_PREFIX} Error: Invalid UPC format. Received: {upc}")
-            self.print_message("Invalid UPC")
-            return
+            if not upc_str.isdigit() or len(upc_str) != 12:
+                print(f"{LOG_PREFIX} Error: Invalid UPC format. Received: {upc}")
+                self.print_message("Invalid UPC")
+                return
         
-        self.printer.ln(2)
-        self.printer.barcode(upc_str, 'UPC-A', 64, 2, '', 'A', True, 'B')
-        self.clear_receipt_data_buffer()
+            self.printer.ln(2)
+            self.printer.barcode(upc_str, 'UPC-A', 64, 2, '', 'A', True, 'B')
+            self.clear_receipt_data_buffer()
+        else:
+            print(f"{LOG_PREFIX} No UPC provided, skipping barcode")
     
     def print_message(self, message):
-        print(f"{LOG_PREFIX} Printing message")
-        self.printer.ln(2)
-        self.printer.set(align='center', normal_textsize=True)
-        self.printer.text(format_string(message, False))
-        self.clear_receipt_data_buffer()
+        if message:
+            print(f"{LOG_PREFIX} Printing message")
+            self.printer.ln(2)
+            self.printer.set(align='center', normal_textsize=True)
+            self.printer.text(format_string(message, double_size=False, flip=False))
+            self.clear_receipt_data_buffer()
+        else:
+            print(f"{LOG_PREFIX} No message provided, skipping message")
 
     def clear_receipt_data_buffer(self):
         time.sleep(SLEEP_BETWEEN_SEGMENTS_MS/1000)

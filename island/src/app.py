@@ -7,6 +7,7 @@ import requests
 import time
 
 RECEIPT_DEBUG_MODE = False
+LABEL_DEBUG_MODE = False
 
 app = Flask(__name__)
 byf_client = BYFAPIClient()
@@ -56,6 +57,11 @@ def print_receipt():
             detect_image(request.args.get('trigger'))
     
     return jsonify({"success": True, "message": "Receipt print job started"})
+
+@app.route('/label/configure')
+def configure_label_printer():
+    label_printer_manager.configure_printer()
+    return jsonify({"success": True, "message": "Label printer configure request sent"})
 
 @app.route('/label/print')
 def print_label():
@@ -176,7 +182,7 @@ def wave_status():
             return jsonify({"success": False}), 500
 
 def send_receipt_debug_request():
-    time.sleep(2)
+    time.sleep(5)
     print("[RECEIPT_DEBUG_MODE] Sending debug print request...")
     try:
         response = requests.get('http://localhost/receipt/print?order=Channel+Islands&wait=30&upcs=%5B860012979325%2C860012979332%5D&details=6+Tender+Combo+-+%2412.99%0AJust+Fries+-+%242.99%0ATOTAL+-+%2415.98&image=true&trigger=order-created&message=Park+fact%3A+Channel+Islands+has+10%25+of+the+park%27s+species+found+nowhere+else+on+Earth')
@@ -184,6 +190,16 @@ def send_receipt_debug_request():
         print("[RECEIPT_DEBUG_MODE] Debug print request sent successfully")
     except requests.RequestException as e:
         print(f"[RECEIPT_DEBUG_MODE] Error sending debug print request: {str(e)}")
+
+def send_label_debug_request():
+    time.sleep(5)
+    print("[LABEL_DEBUG_MODE] Sending debug print request...")
+    try:
+        response = requests.get('http://localhost/label/print?order=Zion&item=3%20Tender%20Combo&upc=123456789123&item_number=3&item_total=3&fulfillment=8f50e9ec-ef4b-4695-bd04-794d6f9f477c&image=true&trigger=order-created')
+        response.raise_for_status()
+        print("[LABEL_DEBUG_MODE] Debug print request sent successfully")
+    except requests.RequestException as e:
+        print(f"[LABEL_DEBUG_MODE] Error sending debug print request: {str(e)}")
 
 if __name__ == '__main__':
     # Start receipt & label printer status checking in a separate thread
@@ -193,5 +209,7 @@ if __name__ == '__main__':
     
     if RECEIPT_DEBUG_MODE:
         threading.Thread(target=send_receipt_debug_request, daemon=True).start()
+    if LABEL_DEBUG_MODE:
+        threading.Thread(target=send_label_debug_request, daemon=True).start()
     
     app.run(host='0.0.0.0', port=80)
