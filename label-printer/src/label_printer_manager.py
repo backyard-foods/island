@@ -1,17 +1,18 @@
 import time
 from escpos.printer import Usb
-from escpos.constants import QR_ECLEVEL_M
+from escpos.constants import QR_ECLEVEL_M, RT_STATUS_ONLINE, RT_STATUS_PAPER
 from escpos.exceptions import DeviceNotFoundError
 import threading
-from utils import restart_service, restart_container, format_string
+from utils import restart_service, format_string
+import binascii  # Add this import at the top of the file
 
 FEEDBACK_URL = "https://backyardfoods.com/feedback"
 # ~270x50 PNG, black on transparent
 LOGO_PATH = "receipt-logo.png"
 
-LOGO_FRAGMENT_HEIGHT = 10
-LOGO_SLEEP_BETWEEN_FRAGMENTS_MS = 500
-SLEEP_BETWEEN_SEGMENTS_MS = 300
+LOGO_FRAGMENT_HEIGHT = 20
+LOGO_SLEEP_BETWEEN_FRAGMENTS_MS = 0
+SLEEP_BETWEEN_SEGMENTS_MS = 50
 
 # TM-L00 printer
 MAKE = 0x04b8
@@ -19,7 +20,8 @@ MODEL = 0x0e31
 PROFILE = "TM-L90"  # Wrong profile for the TM-L100, but no issues so far
 PRINT_COOLDOWN = 4
 POLL_COOLDOWN = 2
-TIMEOUT = 10
+TIMEOUT = 30
+TRANSMIT_READ_DELAY_MS = 100
 
 class LabelPrinterManager:
     def __init__(self):
@@ -101,30 +103,37 @@ class LabelPrinterManager:
                 
                 self.printer.open()
 
-                online_status = self.printer.is_online()
-                paper_status = self.printer.paper_status()
+                status_command = b'\x10\x04\x04'
+                self.printer._raw(status_command)
+                time.sleep(TRANSMIT_READ_DELAY_MS/1000)
+                status = self.printer._read()
+                print(f"Status: {status}")
 
-                print(f"Online status: {online_status}, Paper status: {paper_status}")
+                # Convert the byte array to a hexadecimal string
+                status_hex = binascii.hexlify(status).decode('utf-8')
+                print(f"Status (hex): {status_hex}")
+                
+                # Print each byte separately for more detailed analysis
+                status_bytes = [f"{b:02x}" for b in status]
+                print(f"Status (bytes): {' '.join(status_bytes)}")
 
-                if paper_status == 2 and online_status == True:
-                    status = "ready"
-                elif paper_status == 1:
-                    status = "low_paper" 
-                elif paper_status == 0:
-                    status = "out_of_paper"
+                # Return all bits in the status byte
+                if status:
+                    status_bits = ''.join(f"{b:08b}" for b in status)
+                    print(f"Status (bits): {status_bits}")
+                    return status_bits
                 else:
-                    status = "error"
+                    return "No status received"
                 
             except DeviceNotFoundError as e:
                 print(f"Printer not found: {str(e)}")
-                status = "offline"
+                return "offline"
             except Exception as e:
                 print(f"Status check error: {str(e)}")
-                status = "error"
+                return "error"
             finally:
                 self.last_status = status
                 self.printer.close()
-            return status
 
     def throttle(self, printing=True):
         current_time = time.time()
@@ -273,4 +282,3 @@ class LabelPrinterManager:
                 print(f"Reload paper error: {str(e)}")
                 return False
             return True
-
