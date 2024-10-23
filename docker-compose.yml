@@ -15,15 +15,15 @@ services:
       BYF_USER: milan@backyardfoods.com
       BYF_PW: testtest
       RESTART_POLICY: '0'
-  wifi-connect:
-    build: ./wifi-connect
-    network_mode: "host"
-    labels:
-      io.balena.features.dbus: '1'
-    cap_add:
-      - NET_ADMIN
-    environment:
-      DBUS_SYSTEM_BUS_ADDRESS: "unix:path=/host/run/dbus/system_bus_socket"
+#  wifi-connect:
+#    build: ./wifi-connect
+#    network_mode: "host"
+#    labels:
+#      io.balena.features.dbus: '1'
+#    cap_add:
+#      - NET_ADMIN
+#    environment:
+#      DBUS_SYSTEM_BUS_ADDRESS: "unix:path=/host/run/dbus/system_bus_socket"
   #baywatch:
   #  build: ./baywatch
   #  restart: always
@@ -52,3 +52,11 @@ services:
     privileged: true
     labels:
       io.balena.features.supervisor-api: '1'
+  receipt-printer:
+    build: ./receipt-printer
+    restart: always
+    privileged: true
+    labels:
+      io.balena.features.supervisor-api: '1'
+    environment:
+      RECEIPT_PRINTER_KIOSK: true

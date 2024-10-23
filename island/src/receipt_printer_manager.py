@@ -140,7 +140,6 @@ class ReceiptPrinterManager:
                            center=False)
         self.clear_receipt_data_buffer()
 
-
     def print_heading(self, order):
         if order:
             print(f"{LOG_PREFIX} Printing heading")

@@ -1,0 +1,6 @@
+name: receipt-printer
+type: sw.application
+version: '0.0.1'
+joinable: false
+description: >-
+  Receipt printer service

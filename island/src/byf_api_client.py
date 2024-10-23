@@ -7,6 +7,8 @@ from utils import restart_service
 POLL_INTERVAL_S = 20
 LABEL_PRINTER_RESTART_TIME_S = 15
 LABEL_PRINTER_TIME_BETWEEN_RESTARTS_S = 120
+RECEIPT_PRINTER_RESTART_TIME_S = 15
+RECEIPT_PRINTER_TIME_BETWEEN_RESTARTS_S = 120
 
 class BYFAPIClient:
     def __init__(self):
@@ -27,6 +29,9 @@ class BYFAPIClient:
         self.label_printer_status = None
         self.label_printer_reason = None
         self.label_printer_last_restart = 0
+        self.receipt_printer_status = None
+        self.receipt_printer_reason = None
+        self.receipt_printer_last_restart = 0
 
     def authenticate(self):
         auth_url = f"{self.api_url}/auth/v1/token?grant_type=password"
@@ -50,7 +55,8 @@ class BYFAPIClient:
             raise
 
     def get_state(self):
-        self.handle_label_printer_status()
+        self.handle_printer_status()
+        
         state_url = f"{self.api_url}/functions/v1/state"
         state_headers = {
             "Authorization": f"Bearer {self.access_token}",
@@ -62,6 +68,8 @@ class BYFAPIClient:
             "deviceType": self.device_type,
             "labelPrinterStatus": self.label_printer_status,
             "labelPrinterReason": self.label_printer_reason,
+            "receiptPrinterStatus": self.receipt_printer_status,
+            "receiptPrinterReason": self.receipt_printer_reason,
         }
 
         # Check if the token is valid, if not, authenticate
@@ -109,6 +117,42 @@ class BYFAPIClient:
             self.authenticate()
         return self.access_token
 
+    def handle_printer_status(self):
+        self.handle_label_printer_status()
+        self.handle_receipt_printer_status()
+    
+    def handle_receipt_printer_status(self):
+        time_since_restart = time.time() - self.receipt_printer_last_restart
+        
+        if time_since_restart < RECEIPT_PRINTER_RESTART_TIME_S:
+            return self.receipt_printer_status, self.receipt_printer_reason
+        
+        status = None
+        reason = None
+
+        try:
+            response = requests.get('http://receipt-printer:1234/status')
+            response.raise_for_status()
+            status = response.json().get('status', None)
+            reason = response.json().get('reason', None)
+        except requests.RequestException as e:
+            print(f"Error getting receipt printer status: {str(e)}")
+            status = "service_offline"
+            reason = str(e)
+        self.receipt_printer_status = status
+        self.receipt_printer_reason = reason
+
+        if status == "not_found" and time_since_restart > RECEIPT_PRINTER_TIME_BETWEEN_RESTARTS_S:
+            return self.restart_receipt_printer()
+        
+        return self.receipt_printer_status, self.receipt_printer_reason
+    
+    def restart_receipt_printer(self):
+        self.receipt_printer_last_restart = time.time()
+        self.receipt_printer_status = "service_restarting"
+        restart_service("receipt-printer")
+        return self.receipt_printer_status, self.receipt_printer_reason
+    
     def notify_print_success(self, order):
         if not self.is_token_valid():
             self.authenticate()

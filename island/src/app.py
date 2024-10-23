@@ -1,17 +1,12 @@
 from flask import Flask, jsonify, request
-from receipt_printer_manager import ReceiptPrinterManager
 import threading
 from byf_api_client import BYFAPIClient
 from utils import restart_service
 import requests
-import time
-
-RECEIPT_DEBUG_MODE = False
-LABEL_DEBUG_MODE = False
 
 app = Flask(__name__)
+
 byf_client = BYFAPIClient()
-receipt_printer_manager = ReceiptPrinterManager(byf_client)
 
 def capture_image(trigger):
     try:
@@ -32,31 +27,60 @@ def detect_image(trigger):
     
 @app.route('/receipt/status')
 def get_receipt_printer_status():
-    return jsonify({"status": receipt_printer_manager.get_status()})
+    try:
+        response = requests.get('http://receipt-printer:1234/status')
+        response.raise_for_status()
+        return jsonify(response.json())
+    except requests.RequestException as e:
+        print(f"Error getting receipt printer status: {str(e)}")
+        return jsonify({"status": "service_offline"})
+    
+@app.route('/receipt/configure')
+def configure_receipt_printer():
+    fast = request.args.get('fast', 'true')
+    high_density = request.args.get('high_density', 'true')
+    success = requests.get(f'http://receipt-printer:1234/configure?fast={fast}&high_density={high_density}').json().get('success', False)
+    restart_service("receipt-printer")
+    return jsonify({"success": success})
+
+def print_receipt_async(order, upcs, details, message, wait):
+    try:
+        success = requests.get(f'http://receipt-printer:1234/print?order={order}&upcs={upcs}&details={details}&message={message}&wait={wait}').json().get('success', False)
+        print(f"Receipt print success: {success}")
+        if success:
+            byf_client.notify_print_success(order)
+        return success
+    except Exception as e:
+        print(f"Error printing receipt: {str(e)}")
+        return False
+
 
 @app.route('/receipt/print')
 def print_receipt():
-    order = request.args.get('order', '00')
-    message = request.args.get('message', '')
-    upcs = request.args.get('upcs', [])
-    details = request.args.get('details', '3 Tender Combo')
-    wait = request.args.get('wait', None)
-    
-    # Start the print job in a separate thread
-    threading.Thread(target=receipt_printer_manager.print_receipt, args=(order, upcs, details, message, wait), daemon=True).start()
-    
     if 'trigger' in request.args:
         if request.args.get('image') == 'true':
             capture_image(request.args.get('trigger'))
         if request.args.get('detect') == 'true':
-            detect_image(request.args.get('trigger'))
+            detect_image(request.args.get('trigger')) 
+    
+    order = request.args.get('order', '')
+    message = request.args.get('message', '')
+    upcs = request.args.get('upcs', [])
+    details = request.args.get('details', '')
+    wait = request.args.get('wait', None)
+    
+    threading.Thread(target=print_receipt_async, args=(order, upcs, details, message, wait), daemon=True).start()
     
     return jsonify({"success": True, "message": "Receipt print job started"})
 
 @app.route('/receipt/reload')
 def reload_receipt_paper():
-    success = receipt_printer_manager.reload_paper()
-    return jsonify({"success": success})
+    try:
+        success = requests.get('http://receipt-printer:1234/reload').json().get('success', False)
+        return jsonify({"success": success})
+    except requests.RequestException as e:
+        print(f"Error sending receipt printer reload request: {str(e)}")
+        return jsonify({"success": False})
 
 @app.route('/label/status')
 def get_label_printer_status():
@@ -205,31 +229,7 @@ def wave_status():
         else:
             return jsonify({"success": False}), 500
 
-def send_receipt_debug_request():
-    time.sleep(5)
-    print("[RECEIPT_DEBUG_MODE] Sending debug print request...")
-    try:
-        response = requests.get('http://localhost/receipt/print?order=Debug+Order&wait=30&upcs=%5B860012979325%2C860012979332%5D&details=6+Tender+Combo+-+%2412.99%0AJust+Fries+-+%242.99%0ATOTAL+-+%2415.98&image=true&trigger=order-created&message=Park+fact%3A+Channel+Islands+has+10%25+of+the+park%27s+species+found+nowhere+else+on+Earth')
-        response.raise_for_status()
-        print("[RECEIPT_DEBUG_MODE] Debug print request sent successfully")
-    except requests.RequestException as e:
-        print(f"[RECEIPT_DEBUG_MODE] Error sending debug print request: {str(e)}")
-
-def send_label_debug_request():
-    time.sleep(5)
-    print("[LABEL_DEBUG_MODE] Sending debug print request...")
-    try:
-        response = requests.get('http://localhost/label/print?order=Debug&item=3%20Tender%20Combo&upc=123456789123&item_number=1&item_total=3&fulfillment=8f50e9ec-ef4b-4695-bd04-794d6f9f477c&image=true&trigger=order-created')
-        response.raise_for_status()
-        print("[LABEL_DEBUG_MODE] Debug print request sent successfully")
-    except requests.RequestException as e:
-        print(f"[LABEL_DEBUG_MODE] Error sending debug print request: {str(e)}")
-
 if __name__ == '__main__':
-    threading.Thread(target=receipt_printer_manager.start_status_checking, daemon=True).start()
     threading.Thread(target=byf_client.start_polling, daemon=True).start()
-    
-    if RECEIPT_DEBUG_MODE:
-        threading.Thread(target=send_receipt_debug_request, daemon=True).start()
     
     app.run(host='0.0.0.0', port=80)
