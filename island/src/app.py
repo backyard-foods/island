@@ -1,6 +1,5 @@
 from flask import Flask, jsonify, request
 from receipt_printer_manager import ReceiptPrinterManager
-from label_printer_manager import LabelPrinterManager
 import threading
 from byf_api_client import BYFAPIClient
 from utils import restart_service
