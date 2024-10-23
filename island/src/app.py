@@ -12,7 +12,6 @@ LABEL_DEBUG_MODE = False
 app = Flask(__name__)
 byf_client = BYFAPIClient()
 receipt_printer_manager = ReceiptPrinterManager(byf_client)
-#label_printer_manager = LabelPrinterManager(byf_client)
 
 def capture_image(trigger):
     try:
@@ -227,13 +226,10 @@ def send_label_debug_request():
         print(f"[LABEL_DEBUG_MODE] Error sending debug print request: {str(e)}")
 
 if __name__ == '__main__':
-    # Start receipt & label printer status checking in a separate thread
     threading.Thread(target=receipt_printer_manager.start_status_checking, daemon=True).start()
     threading.Thread(target=byf_client.start_polling, daemon=True).start()
     
     if RECEIPT_DEBUG_MODE:
         threading.Thread(target=send_receipt_debug_request, daemon=True).start()
-    #if LABEL_DEBUG_MODE:
-        #threading.Thread(target=send_label_debug_request, daemon=True).start()
     
     app.run(host='0.0.0.0', port=80)
