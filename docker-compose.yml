@@ -24,12 +24,12 @@ services:
       - NET_ADMIN
     environment:
       DBUS_SYSTEM_BUS_ADDRESS: "unix:path=/host/run/dbus/system_bus_socket"
-  baywatch:
-    build: ./baywatch
-    restart: always
-    privileged: true
-    environment:
-      BYF_API_URL: http://192.168.1.86:54321
+  #baywatch:
+  #  build: ./baywatch
+  #  restart: always
+  #  privileged: true
+  #  environment:
+  #    BYF_API_URL: http://192.168.1.86:54321
   porchlight:
     build: ./porchlight
     restart: always
@@ -40,12 +40,12 @@ services:
       io.balena.features.dbus: 1
     environment:
       CEILING_LIGHT_GPIO_PIN: 6
-  wave:
-    build: ./wave
-    restart: always
-    privileged: true
-    volumes:
-      - spotify-cache:/spotify-cache
+  #wave:
+  #  build: ./wave
+  #  restart: always
+  #  privileged: true
+  #  volumes:
+  #    - spotify-cache:/spotify-cache
   label-printer:
     build: ./label-printer
     restart: always
