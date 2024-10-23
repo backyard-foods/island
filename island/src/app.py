@@ -3,6 +3,7 @@ from receipt_printer_manager import ReceiptPrinterManager
 from label_printer_manager import LabelPrinterManager
 import threading
 from byf_api_client import BYFAPIClient
+from utils import restart_service
 import requests
 import time
 
@@ -64,7 +65,7 @@ def get_label_printer_status():
     try:
         response = requests.get('http://label-printer:1234/status')
         response.raise_for_status()
-        return jsonify({"status": response.json().get('status', '')})
+        return jsonify(response.json())
     except requests.RequestException as e:
         print(f"Error getting label printer status: {str(e)}")
         return jsonify({"status": "service_offline"})
@@ -73,13 +74,9 @@ def get_label_printer_status():
 def configure_label_printer():
     buzzer = request.args.get('buzzer', 'false')
     paper_removal_standby = request.args.get('paper_removal_standby', 'false')
-    try:
-        response = requests.get(f'http://label-printer:1234/configure?buzzer={buzzer}&paper_removal_standby={paper_removal_standby}')
-        response.raise_for_status()
-        return jsonify({"success": True, "message": "Label printer configure request sent"})
-    except requests.RequestException as e:
-        print(f"Error sending label printer configure request: {str(e)}")
-        return jsonify({"success": False, "message": "Error sending label printer configure request"})
+    success = requests.get(f'http://label-printer:1234/configure?buzzer={buzzer}&paper_removal_standby={paper_removal_standby}').json().get('success', False)
+    restart_service("label-printer")
+    return jsonify({"success": success})
 
 def print_label_async(order, item, upc, item_number, item_total, fulfillment):
     try:

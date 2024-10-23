@@ -1,10 +1,9 @@
 import time
 from escpos.printer import Usb
-from escpos.constants import QR_ECLEVEL_M, RT_STATUS_ONLINE, RT_STATUS_PAPER
+from escpos.constants import QR_ECLEVEL_M
 from escpos.exceptions import DeviceNotFoundError
 import threading
-from utils import restart_service, format_string
-import binascii  # Add this import at the top of the file
+from utils import format_string
 
 FEEDBACK_URL = "https://backyardfoods.com/feedback"
 # ~270x50 PNG, black on transparent
@@ -14,7 +13,7 @@ LOGO_FRAGMENT_HEIGHT = 20
 LOGO_SLEEP_BETWEEN_FRAGMENTS_MS = 0
 SLEEP_BETWEEN_SEGMENTS_MS = 50
 
-# TM-L00 printer
+# TM-L00 printer settings
 MAKE = 0x04b8
 MODEL = 0x0e31
 PROFILE = "TM-L90"  # Wrong profile for the TM-L100, but no issues so far
@@ -22,6 +21,41 @@ PRINT_COOLDOWN = 4
 POLL_COOLDOWN = 2
 TIMEOUT = 30
 TRANSMIT_READ_DELAY_MS = 100
+CONFIGURATION_SLEEP_TIME = 10
+
+# TM-L00 printer status constants
+TRANSMIT_STATUS = b'\x10\x04'
+
+TRANSMIT_PRINTER_STATUS = TRANSMIT_STATUS + b'\x01'
+VALID_PRINTER_STATUSES = [
+    0b00010110,
+    0b00011110,
+    0b00110110,
+    0b00111110,
+    0b01010110,
+    0b01011110,
+    0b01110110,
+    0b01111110
+]
+OFFLINE_MASK = 0b00011110
+WAITING_FOR_RECOVERY_MASK = 0b00110110
+PAPER_FEED_BUTTON_MASK = 0b01010110
+
+TRANSMIT_OFFLINE_CAUSE = TRANSMIT_STATUS + b'\x02'
+OFFLINE_COVER_OPEN_MASK = 0b00010110
+OFFLINE_PAPER_FEED_BUTTON_MASK = 0b00011010
+OFFLINE_PAPER_OUT_MASK = 0b00110010
+OFFLINE_ERROR_MASK = 0b01010010
+
+TRANSMIT_ERROR_CAUSE = TRANSMIT_STATUS + b'\x03'
+ERROR_RECOVERABLE_MASK = 0b00010110
+ERROR_AUTOCUTTER_MASK = 0b00011010
+ERROR_UNRECOVERABLE_MASK = 0b00110010
+ERROR_AUTORECOVERABLE_MASK = 0b01010010
+
+TRANSMIT_PAPER_STATUS = TRANSMIT_STATUS + b'\x04'
+VALID_PAPER_STATUSES = [0b00010010, 0b01110010]
+PAPER_OUT_MASK = 0b01110010
 
 class LabelPrinterManager:
     def __init__(self):
@@ -34,106 +68,254 @@ class LabelPrinterManager:
 
     def configure_printer(self, buzzer=False, paper_removal_standby=False):
         print("Configuring printer")
+        try:
 
-        gs = b'\x1D' # prefix for GS commands
-        e_command = b'\x28\x45'  # prefix for GS ( E commands
+            gs = b'\x1D' # prefix for GS commands
+            e_command = b'\x28\x45'  # prefix for GS ( E commands
 
-        # Function 1 - Open User Setting Mode 
-        pL = b'\x03' # data length low byte
-        pH = b'\x00' # data length high byte
-        fn = b'\x01' # function code 1
-        d1 = b'\x49' # data 1: character "I"
-        d2 = b'\x4E' # data 2: character "N"
-        print(f"Sending 'Open User Setting' command: {gs + e_command + pL + pH + fn + d1 + d2}")
-        self.printer._raw(gs + e_command + pL + pH + fn + d1 + d2)
-        self.clear_label_data_buffer()
+            # Function 1 - Open User Setting Mode 
+            pL = b'\x03' # data length low byte
+            pH = b'\x00' # data length high byte
+            fn = b'\x01' # function code 1
+            d1 = b'\x49' # data 1: character "I"
+            d2 = b'\x4E' # data 2: character "N"
+            print(f"Sending 'Open User Setting' command: {gs + e_command + pL + pH + fn + d1 + d2}")
+            self.printer._raw(gs + e_command + pL + pH + fn + d1 + d2)
+            self.clear_label_data_buffer()
 
-        # Function 5 - 119: Set Buzzer Mode
-        pL = b'\x04' # data length low byte
-        pH = b'\x00' # data length high byte
-        fn = b'\x05' # function code 5
-        a = b'\x77' # buzzer setting (119)
-        nL = b'\x00' # 0 for off, 1 for external, 2 for internal
-        if buzzer:
-            nL = b'\x02'
-        nH = b'\x00' # high bit (unused)
-        print(f"Sending 'Set Buzzer Mode' command: {gs + e_command + pL + pH + fn + a + nL + nH}")
-        self.printer._raw(gs + e_command + pL + pH + fn + a + nL + nH)
-        self.clear_label_data_buffer()
+            # Function 5 - 119: Set Buzzer Mode
+            pL = b'\x04' # data length low byte
+            pH = b'\x00' # data length high byte
+            fn = b'\x05' # function code 5
+            a = b'\x77' # buzzer setting (119)
+            nL = b'\x00' # 0 for off, 1 for external, 2 for internal
+            if buzzer:
+                nL = b'\x02'
+            nH = b'\x00' # high bit (unused)
+            print(f"Sending 'Set Buzzer Mode' command: {gs + e_command + pL + pH + fn + a + nL + nH}")
+            self.printer._raw(gs + e_command + pL + pH + fn + a + nL + nH)
+            self.clear_label_data_buffer()
 
-        # Function 5 - 14: Turn off paper removal standby
-        pL = b'\x04' # data length low byte
-        pH = b'\x00' # data length high byte
-        fn = b'\x05' # function code 5
-        a = b'\x0E' # buzzer setting (14)
-        nL = b'\x00' # 0 (x00) for off, 64 (x40) for on
-        if paper_removal_standby:
-            nL = b'\x40'
-        nH = b'\x00' # high bit (unused)
-        print(f"Sending 'Turn off paper removal standby' command: {gs + e_command + pL + pH + fn + a + nL + nH}")
-        self.printer._raw(gs + e_command + pL + pH + fn + a + nL + nH)
-        self.clear_label_data_buffer()
+            # Function 5 - 14: Turn off paper removal standby
+            pL = b'\x04' # data length low byte
+            pH = b'\x00' # data length high byte
+            fn = b'\x05' # function code 5
+            a = b'\x0E' # buzzer setting (14)
+            nL = b'\x00' # 0 (x00) for off, 64 (x40) for on
+            if paper_removal_standby:
+                nL = b'\x40'
+            nH = b'\x00' # high bit (unused)
+            print(f"Sending 'Turn off paper removal standby' command: {gs + e_command + pL + pH + fn + a + nL + nH}")
+            self.printer._raw(gs + e_command + pL + pH + fn + a + nL + nH)
+            self.clear_label_data_buffer()
 
-        # Function 2 - Close User Setting Mode 
-        pL = b'\x04' # data length low byte
-        pH = b'\x00' # data length high byte
-        fn = b'\x02' # function code 2
-        d1 = b'\x4F' # data 1: character "O"
-        d2 = b'\x55' # data 2: character "U"
-        d3 = b'\x54' # data 3: character "T"
-        print(f"Sending 'Close User Setting' command: {gs + e_command + pL + pH + fn + d1 + d2 + d3}")
-        self.printer._raw(gs + e_command + pL + pH + fn + d1 + d2 + d3)
-        self.clear_label_data_buffer()
+            # Function 2 - Close User Setting Mode 
+            pL = b'\x04' # data length low byte
+            pH = b'\x00' # data length high byte
+            fn = b'\x02' # function code 2
+            d1 = b'\x4F' # data 1: character "O"
+            d2 = b'\x55' # data 2: character "U"
+            d3 = b'\x54' # data 3: character "T"
+            print(f"Sending 'Close User Setting' command: {gs + e_command + pL + pH + fn + d1 + d2 + d3}")
+            self.printer._raw(gs + e_command + pL + pH + fn + d1 + d2 + d3)
+            self.clear_label_data_buffer()
 
+            self.printer.close()
+
+            for i in range(CONFIGURATION_SLEEP_TIME):
+                print(f"Waiting... {i+1}/{CONFIGURATION_SLEEP_TIME} seconds")
+                time.sleep(1)
+            
+            return True
+        except Exception as e:
+            print(f"Configuration error: {str(e)}")
+            return False
+        
+
+    def get_printer_status(self):
+        print(f"Getting printer status")
+        self.printer.open()
+        self.printer._raw(TRANSMIT_PRINTER_STATUS)
+        time.sleep(TRANSMIT_READ_DELAY_MS/1000)
+        printer_status_raw = self.printer._read()
         self.printer.close()
 
-        sleep_time = 15
-        for i in range(sleep_time):
-            print(f"Waiting... {i+1}/{sleep_time} seconds")
-            time.sleep(1)
+        print(f"Printer status raw: {printer_status_raw}")
+        printer_status_int = int.from_bytes(printer_status_raw, byteorder='big')
+        print(f"Printer status int: {printer_status_int}")
+        printer_status_bits = bin(printer_status_int)[2:].zfill(8)
+        print(f"Printer status bits: {printer_status_bits}")
 
-        restart_service("label-printer")
+        valid_printer_status = printer_status_int in VALID_PRINTER_STATUSES
+        offline = valid_printer_status and (printer_status_int & OFFLINE_MASK) == OFFLINE_MASK
+        waiting_for_recovery = valid_printer_status and (printer_status_int & WAITING_FOR_RECOVERY_MASK) == WAITING_FOR_RECOVERY_MASK
+        paper_feed_button = valid_printer_status and (printer_status_int & PAPER_FEED_BUTTON_MASK) == PAPER_FEED_BUTTON_MASK
+
+        print(f"Valid printer status: {valid_printer_status}")
+        print(f"Offline: {offline}")
+        print(f"Waiting for recovery: {waiting_for_recovery}")
+        print(f"Paper feed button: {paper_feed_button}")
+        return {
+            'query_error': not valid_printer_status,
+            'offline': offline,
+            'waiting_for_recovery': waiting_for_recovery,
+            'paper_feed_button': paper_feed_button
+        }
+    
+    def get_offline_cause(self):
+        print(f"Getting offline cause")
+        self.printer.open()
+        self.printer._raw(TRANSMIT_OFFLINE_CAUSE)
+        time.sleep(TRANSMIT_READ_DELAY_MS/1000)
+        offline_cause_raw = self.printer._read()
+        self.printer.close()
+
+        print(f"Offline cause raw: {offline_cause_raw}")
+        offline_cause_int = int.from_bytes(offline_cause_raw, byteorder='big')
+        print(f"Offline cause int: {offline_cause_int}")
+        offline_cause_bits = bin(offline_cause_int)[2:].zfill(8)
+        print(f"Offline cause bits: {offline_cause_bits}")
+
+        cover_open = offline_cause_int & OFFLINE_COVER_OPEN_MASK == OFFLINE_COVER_OPEN_MASK
+        paper_feed_button = offline_cause_int & OFFLINE_PAPER_FEED_BUTTON_MASK == OFFLINE_PAPER_FEED_BUTTON_MASK
+        paper_out = offline_cause_int & OFFLINE_PAPER_OUT_MASK == OFFLINE_PAPER_OUT_MASK
+        error = offline_cause_int & OFFLINE_ERROR_MASK == OFFLINE_ERROR_MASK
+
+        valid_offline_cause = cover_open or paper_feed_button or paper_out or error
+
+        print(f"Valid offline cause: {valid_offline_cause}")
+        print(f"Cover open: {cover_open}")
+        print(f"Paper feed button: {paper_feed_button}")
+        print(f"Paper out: {paper_out}")
+        print(f"Error: {error}")
+        return {
+            'query_error': not valid_offline_cause,
+            'cover_open': cover_open,
+            'paper_feed_button': paper_feed_button,
+            'paper_out': paper_out,
+            'error': error
+        }
+    
+    def get_error_cause(self):
+        print(f"Getting error cause")
+        self.printer.open()
+        self.printer._raw(TRANSMIT_ERROR_CAUSE)
+        time.sleep(TRANSMIT_READ_DELAY_MS/1000)
+        error_cause_raw = self.printer._read()
+        self.printer.close()
+
+        print(f"Error cause raw: {error_cause_raw}")
+        error_cause_int = int.from_bytes(error_cause_raw, byteorder='big')
+        print(f"Error cause int: {error_cause_int}")
+        error_cause_bits = bin(error_cause_int)[2:].zfill(8)
+        print(f"Error cause bits: {error_cause_bits}")
+
+        recoverable = error_cause_int & ERROR_RECOVERABLE_MASK == ERROR_RECOVERABLE_MASK
+        autocutter = error_cause_int & ERROR_AUTOCUTTER_MASK == ERROR_AUTOCUTTER_MASK
+        unrecoverable = error_cause_int & ERROR_UNRECOVERABLE_MASK == ERROR_UNRECOVERABLE_MASK
+        autorecoverable = error_cause_int & ERROR_AUTORECOVERABLE_MASK == ERROR_AUTORECOVERABLE_MASK
+
+        valid_error_cause = recoverable or autocutter or unrecoverable or autorecoverable
+
+        print(f"Valid error cause: {valid_error_cause}")
+        print(f"Recoverable: {recoverable}")
+        print(f"Autocutter: {autocutter}")
+        print(f"Unrecoverable: {unrecoverable}")
+        print(f"Autorecoverable: {autorecoverable}")
+        return {
+            'query_error': not valid_error_cause,
+            'recoverable': recoverable,
+            'autocutter': autocutter,
+            'unrecoverable': unrecoverable,
+            'autorecoverable': autorecoverable
+        }
+
+    def get_paper_status(self):
+        print(f"Getting paper status")
+        self.printer.open()
+        self.printer._raw(TRANSMIT_PAPER_STATUS)
+        time.sleep(TRANSMIT_READ_DELAY_MS/1000)
+        paper_status_raw = self.printer._read()
+        self.printer.close()
+
+        print(f"Paper status raw: {paper_status_raw}")
+        paper_status_int = int.from_bytes(paper_status_raw, byteorder='big')
+        print(f"Paper status int: {paper_status_int}")
+
+        valid_paper_status = paper_status_int in VALID_PAPER_STATUSES
+        paper_out = valid_paper_status and (paper_status_int & PAPER_OUT_MASK) == PAPER_OUT_MASK
+
+        print(f"Valid paper status: {valid_paper_status}")
+        print(f"Paper out: {paper_out}")
+        return {
+            'query_error': not valid_paper_status,
+            'paper_out': paper_out
+        }
 
     def get_status(self):
         with self.lock:
             self.throttle(printing=False)
-            status = None
+            status = "unknown"
+            reason = None
             try:
-                print(f"Checking status")
-                
-                self.printer.open()
+                printer_status = self.get_printer_status()
+                print(f"Printer status: {printer_status}")
 
-                status_command = b'\x10\x04\x04'
-                self.printer._raw(status_command)
-                time.sleep(TRANSMIT_READ_DELAY_MS/1000)
-                status = self.printer._read()
-                print(f"Status: {status}")
+                paper_status = self.get_paper_status()
+                print(f"Paper status: {paper_status}")
 
-                # Convert the byte array to a hexadecimal string
-                status_hex = binascii.hexlify(status).decode('utf-8')
-                print(f"Status (hex): {status_hex}")
-                
-                # Print each byte separately for more detailed analysis
-                status_bytes = [f"{b:02x}" for b in status]
-                print(f"Status (bytes): {' '.join(status_bytes)}")
-
-                # Return all bits in the status byte
-                if status:
-                    status_bits = ''.join(f"{b:08b}" for b in status)
-                    print(f"Status (bits): {status_bits}")
-                    return status_bits
+                if printer_status['query_error']:
+                    status = "unknown"
+                    reason = "invalid printer status"
+                elif paper_status['query_error']:
+                    status = "unknown"
+                    reason = "invalid paper status"
+                elif paper_status['paper_out']:
+                    status = "no_paper"
+                elif not printer_status['offline']:
+                    status = "ready"
                 else:
-                    return "No status received"
-                
+                    status = "printer_offline"
+
+                    offline_cause = self.get_offline_cause()
+                    print(f"Offline cause: {offline_cause}")
+                    
+                    if not offline_cause['query_error']:
+                        if offline_cause['cover_open']:
+                            reason = "cover_open"
+                        elif offline_cause['paper_feed_button']:
+                            reason = "paper_feed_button"
+                        elif offline_cause['paper_out']:
+                            reason = "paper_out"
+                        elif offline_cause['error']:
+                            error_cause = self.get_error_cause()
+                            print(f"Error cause: {error_cause}")
+                            status = "error"
+                            if not error_cause['query_error']:
+                                if error_cause['autorecoverable']:
+                                    reason = "autorecoverable"
+                                elif error_cause['unrecoverable']:
+                                    reason = "unrecoverable"
+                                elif error_cause['recoverable']:
+                                    reason = "recoverable"
+                                elif error_cause['autocutter']:
+                                    reason = "autocutter"
+
             except DeviceNotFoundError as e:
                 print(f"Printer not found: {str(e)}")
-                return "offline"
+                status = "not_found"
+                reason = str(e)
             except Exception as e:
                 print(f"Status check error: {str(e)}")
-                return "error"
+                status = "unknown"
+                reason = f"exception: {str(e)}"
             finally:
                 self.last_status = status
                 self.printer.close()
+            return {
+                "status": status,
+                "reason": reason
+            }
 
     def throttle(self, printing=True):
         current_time = time.time()

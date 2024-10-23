@@ -11,17 +11,17 @@ label_printer_manager = LabelPrinterManager()
 
 @app.route('/status')
 def get_label_printer_status():
-    return jsonify({"status": label_printer_manager.get_status()})
+    try:
+        return jsonify(label_printer_manager.get_status())
+    except Exception as e:
+        return jsonify({"status": "unknown", "reason": f"exception: {str(e)}"})
 
 @app.route('/configure')
 def configure_label_printer():
     buzzer = request.args.get('buzzer', 'false') == 'true'
     paper_removal_standby = request.args.get('paper_removal_standby', 'false') == 'true'
-    try:
-        threading.Thread(target=label_printer_manager.configure_printer, args=(buzzer, paper_removal_standby), daemon=True).start()
-        return jsonify({"success": True, "message": "Label printer configuration started"})
-    except Exception as e:
-        return jsonify({"success": False, "message": f"Failed to start configuration: {str(e)}"})
+    success = label_printer_manager.configure_printer(buzzer, paper_removal_standby)
+    return jsonify({"success": success})
 
 @app.route('/print')
 def print_label():
