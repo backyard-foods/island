@@ -4,7 +4,7 @@ import time
 from temp_sensor_manager import TempSensorManager
 from utils import restart_service
 
-POLL_INTERVAL_S = 20
+POLL_INTERVAL_S = 10
 ERROR_POLL_INTERVAL_S = 5
 LABEL_PRINTER_RESTART_TIME_S = 15
 LABEL_PRINTER_TIME_BETWEEN_RESTARTS_S = 120
