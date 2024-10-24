@@ -258,5 +258,8 @@ class BYFAPIClient:
 
     def start_polling(self):
         while True:
-            self.get_state()
+            try:
+                self.get_state()
+            except Exception as e:
+                print(f"Error getting state: {e}")
             time.sleep(self.poll_interval)
