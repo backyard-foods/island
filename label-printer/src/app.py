@@ -4,7 +4,7 @@ import threading
 import requests
 import time
 
-LABEL_DEBUG_MODE = True
+LABEL_DEBUG_MODE = False
 
 app = Flask(__name__)
 label_printer_manager = LabelPrinterManager()
