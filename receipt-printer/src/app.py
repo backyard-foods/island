@@ -4,7 +4,7 @@ import threading
 import requests
 import time
 
-RECEIPT_DEBUG_MODE = False
+RECEIPT_DEBUG_MODE = True
 
 app = Flask(__name__)
 receipt_printer_manager = ReceiptPrinterManager()
@@ -18,7 +18,7 @@ def get_receipt_printer_status():
 
 @app.route('/configure')
 def configure_receipt_printer():
-    fast = request.args.get('fast', 'true') == 'true'
+    fast = request.args.get('fast', 'false') == 'true'
     high_density = request.args.get('high_density', 'true') == 'true'
     success = receipt_printer_manager.configure_printer(fast, high_density)
     return jsonify({"success": success})

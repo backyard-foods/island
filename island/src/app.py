@@ -37,7 +37,7 @@ def get_receipt_printer_status():
     
 @app.route('/receipt/configure')
 def configure_receipt_printer():
-    fast = request.args.get('fast', 'true')
+    fast = request.args.get('fast', 'false')
     high_density = request.args.get('high_density', 'true')
     success = requests.get(f'http://receipt-printer:1234/configure?fast={fast}&high_density={high_density}').json().get('success', False)
     restart_service("receipt-printer")

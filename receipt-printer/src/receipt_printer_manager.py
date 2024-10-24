@@ -80,7 +80,7 @@ class ReceiptPrinterManager:
         self.last_status = None
         self.get_status()
 
-    def configure_printer(self, fast=True, high_density=True):
+    def configure_printer(self, fast=False, high_density=True):
         print("Configuring printer")
         try:
 
@@ -115,9 +115,9 @@ class ReceiptPrinterManager:
             pH = b'\x00' # data length high byte
             fn = b'\x05' # function code 5
             a = b'\x06' # print speed setting (6)
-            nL = b'\x07' # 0-13 for level 1 to level 13
+            nL = b'\x08' # 1-13 for level 1 to level 13
             if fast:
-                nL = b'\x0D'
+                nL = b'\x0C'
             nH = b'\x00' # high bit (unused)
             print(f"Sending 'Set Print Speed' command: {gs + e_command + pL + pH + fn + a + nL + nH}")
             self.printer._raw(gs + e_command + pL + pH + fn + a + nL + nH)
