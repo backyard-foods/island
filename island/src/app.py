@@ -57,11 +57,18 @@ def print_receipt_async(order, upcs, details, message, wait):
 
 @app.route('/receipt/print')
 def print_receipt():
-    if 'trigger' in request.args:
-        if request.args.get('image') == 'true':
-            capture_image(request.args.get('trigger'))
-        if request.args.get('detect') == 'true':
-            detect_image(request.args.get('trigger')) 
+    image_error = False
+    image_capture = 'trigger' in request.args
+    if image_capture:
+        try:
+            if request.args.get('image') == 'true':
+                capture_image(request.args.get('trigger'))
+            if request.args.get('detect') == 'true':
+                detect_image(request.args.get('trigger')) 
+        except Exception as e:
+            image_error = True
+            print(f"Error capturing image: {str(e)}")
+        
     
     order = request.args.get('order', '')
     message = request.args.get('message', '')
@@ -71,7 +78,10 @@ def print_receipt():
     
     threading.Thread(target=print_receipt_async, args=(order, upcs, details, message, wait), daemon=True).start()
     
-    return jsonify({"success": True, "message": "Receipt print job started"})
+    if image_capture:
+        return jsonify({"success": True, "message": "Receipt print job started", "image_error": image_error})
+    else:
+        return jsonify({"success": True, "message": "Receipt print job started"})
 
 @app.route('/receipt/reload')
 def reload_receipt_paper():
@@ -113,11 +123,17 @@ def print_label_async(order, item, upc, item_number, item_total, fulfillment):
 
 @app.route('/label/print')
 def print_label():
-    if 'trigger' in request.args:
-        if request.args.get('image') == 'true':
-            capture_image(request.args.get('trigger'))
-        if request.args.get('detect') == 'true':
-            detect_image(request.args.get('trigger'))
+    image_error = False
+    image_capture = 'trigger' in request.args
+    if image_capture:
+        try:
+            if request.args.get('image') == 'true':
+                capture_image(request.args.get('trigger'))
+            if request.args.get('detect') == 'true':
+                detect_image(request.args.get('trigger'))
+        except Exception as e:
+            image_error = True
+            print(f"Error capturing image: {str(e)}")
 
     order = request.args.get('order', '')
     item = request.args.get('item', '')
@@ -128,7 +144,10 @@ def print_label():
 
     threading.Thread(target=print_label_async, args=(order, item, upc, item_number, item_total, fulfillment), daemon=True).start()
     
-    return jsonify({"success": True, "message": "Label print job started"})
+    if image_capture:
+        return jsonify({"success": True, "message": "Label print job started", "image_error": image_error})
+    else:
+        return jsonify({"success": True, "message": "Label print job started"})
 
 @app.route('/label/print_text')
 def print_text():

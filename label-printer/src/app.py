@@ -4,7 +4,7 @@ import threading
 import requests
 import time
 
-LABEL_DEBUG_MODE = False
+LABEL_DEBUG_MODE = True
 
 app = Flask(__name__)
 label_printer_manager = LabelPrinterManager()
@@ -50,7 +50,7 @@ def send_label_debug_request():
     time.sleep(5)
     print("[LABEL_DEBUG_MODE] Sending debug print request...")
     try:
-        response = requests.get('http://localhost/label/print?order=Debug&item=3%20Tender%20Combo&upc=123456789123&item_number=1&item_total=3&fulfillment=8f50e9ec-ef4b-4695-bd04-794d6f9f477c&image=true&trigger=order-created')
+        response = requests.get('http://label-printer:1234/print?order=Debug&item=3%20Tender%20Combo&upc=123456789123&item_number=1&item_total=3&fulfillment=8f50e9ec-ef4b-4695-bd04-794d6f9f477c&image=true&trigger=order-created')
         response.raise_for_status()
         print("[LABEL_DEBUG_MODE] Debug print request sent successfully")
     except requests.RequestException as e:

@@ -4,7 +4,7 @@ import threading
 import requests
 import time
 
-RECEIPT_DEBUG_MODE = False
+RECEIPT_DEBUG_MODE = True
 
 app = Flask(__name__)
 receipt_printer_manager = ReceiptPrinterManager()
