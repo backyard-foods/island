@@ -1,11 +1,14 @@
-click==8.0.4
+requests==2.31.0
 Flask==2.0.3
-importlib-metadata==4.8.3
+#Flask dependencies
 itsdangerous==2.0.1
 Jinja2==3.0.3
 MarkupSafe==2.0.1
 Werkzeug==2.0.3
-zipp==3.6.0
+click==8.0.4
+#python-escpos
 git+https://github.com/milan-kodali/python-escpos.git@master#egg=python-escpos
 pyusb==1.2.1
-requests==2.31.0
+#Compatibility
+importlib-metadata==4.8.3
+zipp==3.6.0

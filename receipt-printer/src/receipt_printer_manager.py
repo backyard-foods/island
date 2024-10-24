@@ -1,6 +1,5 @@
 import time
 from escpos.printer import Usb
-from escpos.constants import QR_ECLEVEL_M
 from escpos.exceptions import DeviceNotFoundError
 import threading
 import json
