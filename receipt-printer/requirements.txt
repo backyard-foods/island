@@ -6,6 +6,9 @@ Jinja2==3.0.3
 MarkupSafe==2.0.1
 Werkzeug==2.0.3
 click==8.0.4
+#python-escpos
+git+https://github.com/milan-kodali/python-escpos.git@master#egg=python-escpos
+pyusb==1.2.1
 #Compatibility
 importlib-metadata==4.8.3
 zipp==3.6.0
