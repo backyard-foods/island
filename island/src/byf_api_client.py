@@ -5,6 +5,7 @@ from temp_sensor_manager import TempSensorManager
 from utils import restart_service
 
 POLL_INTERVAL_S = 20
+ERROR_POLL_INTERVAL_S = 5
 LABEL_PRINTER_RESTART_TIME_S = 15
 LABEL_PRINTER_TIME_BETWEEN_RESTARTS_S = 120
 RECEIPT_PRINTER_RESTART_TIME_S = 15
@@ -120,6 +121,12 @@ class BYFAPIClient:
     def handle_printer_status(self):
         self.handle_label_printer_status()
         self.handle_receipt_printer_status()
+        if self.label_printer_status == "ready" and self.receipt_printer_status == "ready":
+            print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Both printers are ready, setting poll interval to 20s")
+            self.poll_interval = POLL_INTERVAL_S
+        else:
+            print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ One or both printers are not ready, setting poll interval to 5s")
+            self.poll_interval = ERROR_POLL_INTERVAL_S
     
     def handle_receipt_printer_status(self):
         time_since_restart = time.time() - self.receipt_printer_last_restart
@@ -156,8 +163,6 @@ class BYFAPIClient:
     def notify_print_success(self, order):
         if not self.is_token_valid():
             self.authenticate()
-
-        self.get_state()
 
         notify_url = f"{self.api_url}/functions/v1/print"
         notify_headers = {
@@ -212,8 +217,6 @@ class BYFAPIClient:
         if not self.is_token_valid():
             self.authenticate()
 
-        self.get_state()
-
         notify_url = f"{self.api_url}/functions/v1/print-label"
         notify_headers = {
             "Authorization": f"Bearer {self.access_token}",
@@ -234,8 +237,6 @@ class BYFAPIClient:
     def notify_wave_status(self, status):
         if not self.is_token_valid():
             self.authenticate()
-
-        self.get_state()
 
         notify_url = f"{self.api_url}/functions/v1/wave-status"
         notify_headers = {
