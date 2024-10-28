@@ -49,7 +49,7 @@ services:
     labels:
       io.balena.features.supervisor-api: '1'
     environment:
-      RECEIPT_PRINTER_KIOSK: true
+      RECEIPT_PRINTER_KIOSK: false
 #  wifi-connect:
 #    build: ./wifi-connect
 #    network_mode: "host"

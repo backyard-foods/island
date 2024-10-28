@@ -122,10 +122,8 @@ class BYFAPIClient:
         self.handle_label_printer_status()
         self.handle_receipt_printer_status()
         if self.label_printer_status == "ready" and self.receipt_printer_status == "ready":
-            print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Both printers are ready, setting poll interval to 20s")
             self.poll_interval = POLL_INTERVAL_S
         else:
-            print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ One or both printers are not ready, setting poll interval to 5s")
             self.poll_interval = ERROR_POLL_INTERVAL_S
     
     def handle_receipt_printer_status(self):
