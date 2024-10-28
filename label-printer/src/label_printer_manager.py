@@ -5,7 +5,7 @@ from escpos.exceptions import DeviceNotFoundError
 import threading
 from utils import format_string
 
-FEEDBACK_URL = "https://backyardfoods.com/feedback"
+FEEDBACK_URL = "https://goodbear.co/feedback"
 # ~270x50 PNG, black on transparent
 LOGO_PATH = "receipt-logo.png"
 
