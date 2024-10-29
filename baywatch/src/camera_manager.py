@@ -63,13 +63,17 @@ class CameraManager:
             print(f"Error uploading image: {e}")
             return False
 
-    def capture_and_upload(self, bearer_token, trigger=""):
+    def capture_and_upload_thread(self, bearer_token, trigger=""):
         image_data = self.capture_image_to_memory()
         if image_data:
             return self.upload_image(image_data, bearer_token, trigger=trigger)
         else:
             print("Image capture failed. No data to upload.")
             return False
+    
+    def capture_and_upload(self, bearer_token, trigger=""):
+        threading.Thread(target=self.capture_and_upload_thread, args=(bearer_token, trigger), daemon=True).start()
+        return {"success": True, "message": "Capture and upload started"}
         
     def runtime_error(self, message):
         print(f"Runtime error: {message}")
