@@ -3,6 +3,7 @@ from escpos.printer import Usb
 from escpos.constants import QR_ECLEVEL_M
 from escpos.exceptions import DeviceNotFoundError
 import threading
+import json
 from utils import format_string
 
 FEEDBACK_URL = "https://goodbear.co/feedback"
@@ -131,7 +132,6 @@ class LabelPrinterManager:
             print(f"Configuration error: {str(e)}")
             return False
         
-
     def get_printer_status(self):
         print(f"Getting printer status")
         self.printer.open()
@@ -329,8 +329,7 @@ class LabelPrinterManager:
         else:
             self.cooldown = POLL_COOLDOWN
 
-    def print_label(self, order, item, upc, item_number, item_total, fulfillment=None):
-        print(f"Printing label for order: {order}, item: {item}, upc: {upc}, item_number: {item_number}, item_total: {item_total}, fulfillment: {fulfillment}")
+    def print_label(self, order, item, upcs, item_number, item_total, fulfillment=None):
         with self.lock:
             print(f"acquired lock")
             self.throttle()
@@ -354,12 +353,22 @@ class LabelPrinterManager:
                     except ValueError:
                         self.print_details(item)
                         print(f"Invalid item_total value: {item_total}")
-                
-                if fulfillment and item:
+
+                if(upcs):
+                    try:
+                        upcs = json.loads(upcs)
+                    except json.JSONDecodeError:
+                        print(f"Error: Invalid UPC format. Received: {upcs}")
+                        upcs = []
+                    self.print_gap()
+
+                if fulfillment and item and len(upcs) <= 1:
                     self.print_qr(fulfillment, item)
                 
-                if(upc):
-                    self.print_barcode(upc)
+                for i in range(len(upcs)):
+                    self.print_barcode(upcs[i])
+                    if i < len(upcs) - 1:
+                        self.print_gap()
 
                 self.end_print_job()
                 
@@ -438,9 +447,11 @@ class LabelPrinterManager:
         #self.printer.ln(2)
         self.printer.barcode(upc_str, 'UPC-A', 32, 2, '', 'A', True, 'B')
         self.clear_label_data_buffer()
+    
+    def print_gap(self):
+        self.printer.ln(3)
 
     def print_qr(self, fulfillment, item):
-        self.printer.ln(3)
         self.printer.set(align='center', normal_textsize=True)
         self.printer.text("How was your order? Scan to let us know:")
         self.printer.ln(2)

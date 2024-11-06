@@ -27,12 +27,12 @@ def configure_label_printer():
 def print_label():
     order = request.args.get('order', '')
     item = request.args.get('item', '')
-    upc = request.args.get('upc', '')
+    upcs = request.args.get('upcs', [])
     item_number = request.args.get('item_number', '')
     item_total = request.args.get('item_total', '')
     fulfillment = request.args.get('fulfillment')
 
-    success = label_printer_manager.print_label(order, item, upc, item_number, item_total, fulfillment)
+    success = label_printer_manager.print_label(order, item, upcs, item_number, item_total, fulfillment)
     return jsonify({"success": success})
 
 @app.route('/print_text')
