@@ -431,6 +431,7 @@ class LabelPrinterManager:
         self.printer.ln(1)
         self.printer.set(align='center', double_height=True, double_width=True, bold=True, density=3)
         self.printer.text(format_string("PAID", True))
+        self.printer.ln(1)
         self.clear_label_data_buffer()
 
     def print_details(self, item, item_number=None, item_total=None):
