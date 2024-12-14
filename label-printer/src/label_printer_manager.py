@@ -329,7 +329,7 @@ class LabelPrinterManager:
         else:
             self.cooldown = POLL_COOLDOWN
 
-    def print_label(self, order, item, upcs, item_number, item_total, fulfillment=None):
+    def print_label(self, order, item, upcs, item_number, item_total, fulfillment=None, paid=False):
         with self.lock:
             print(f"acquired lock")
             self.throttle()
@@ -353,6 +353,8 @@ class LabelPrinterManager:
                     except ValueError:
                         self.print_details(item)
                         print(f"Invalid item_total value: {item_total}")
+                    finally:
+                        self.print_gap()
 
                 if(upcs):
                     try:
@@ -360,16 +362,18 @@ class LabelPrinterManager:
                     except json.JSONDecodeError:
                         print(f"Error: Invalid UPC format. Received: {upcs}")
                         upcs = []
-                    self.print_gap()
 
-                if fulfillment and item and len(upcs) <= 1:
+                if fulfillment and item and (len(upcs) <= 1 or paid):
                     self.print_qr(fulfillment, item)
                 
-                for i in range(len(upcs)):
-                    self.print_barcode(upcs[i])
-                    if i < len(upcs) - 1:
-                        self.print_gap()
-
+                if paid:
+                    self.print_paid()
+                else:
+                    for i in range(len(upcs)):
+                        self.print_barcode(upcs[i])
+                        if i < len(upcs) - 1:
+                            self.print_gap()
+                            
                 self.end_print_job()
                 
                 return True
@@ -421,6 +425,12 @@ class LabelPrinterManager:
         self.printer.ln(1)
         self.printer.set(align='center', double_height=True, double_width=True, bold=True, density=3)
         self.printer.text(format_string(f"Order #: {str(order).title()}", True))
+        self.clear_label_data_buffer()
+
+    def print_paid(self):
+        self.printer.ln(1)
+        self.printer.set(align='center', double_height=True, double_width=True, bold=True, density=3)
+        self.printer.text(format_string("PAID", True))
         self.clear_label_data_buffer()
 
     def print_details(self, item, item_number=None, item_total=None):

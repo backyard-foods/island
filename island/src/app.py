@@ -110,9 +110,9 @@ def configure_label_printer():
     restart_service("label-printer")
     return jsonify({"success": success})
 
-def print_label_async(order, item, upcs, item_number, item_total, fulfillment):
+def print_label_async(order, item, upcs, item_number, item_total, fulfillment, paid):
     try:
-        success = requests.get(f'http://label-printer:1234/print?order={order}&item={item}&upcs={upcs}&item_number={item_number}&item_total={item_total}&fulfillment={fulfillment}').json().get('success', False)
+        success = requests.get(f'http://label-printer:1234/print?order={order}&item={item}&upcs={upcs}&item_number={item_number}&item_total={item_total}&fulfillment={fulfillment}&paid={paid}').json().get('success', False)
         print(f"Label print success: {success}")
         if fulfillment and success:
             byf_client.notify_label_success(fulfillment)
@@ -141,8 +141,9 @@ def print_label():
     item_number = request.args.get('item_number', '')
     item_total = request.args.get('item_total', '')
     fulfillment = request.args.get('fulfillment', '')
+    paid = request.args.get('paid', 'false')
 
-    threading.Thread(target=print_label_async, args=(order, item, upcs, item_number, item_total, fulfillment), daemon=True).start()
+    threading.Thread(target=print_label_async, args=(order, item, upcs, item_number, item_total, fulfillment, paid), daemon=True).start()
     
     if image_capture:
         return jsonify({"success": True, "message": "Label print job started", "image_error": image_error})
