@@ -205,10 +205,10 @@ def store_control():
 
     try:
         if open:
-            print("Starting wave")
+            print("Starting wave from store control")
             start_service('wave')
         else:
-            print("Stopping wave")
+            print("Stopping wave from store control")
             stop_service('wave')
         print(f"Sending light {state} request to porchlight")
         response = requests.get(f'http://porchlight:1234/{state}')
@@ -261,8 +261,10 @@ def wave_control():
 
     try:
         if on:
+            print("Starting wave from wave control")
             start_service('wave')
         else:
+            print("Stopping wave from wave control")
             stop_service('wave')
         return jsonify({"success": True})
     except Exception as e:
