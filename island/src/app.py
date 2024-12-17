@@ -204,10 +204,16 @@ def store_control():
     state = 'on' if open else 'off'
 
     try:
+        if open:
+            print("Starting wave")
+            start_service('wave')
+        else:
+            print("Stopping wave")
+            stop_service('wave')
         print(f"Sending light {state} request to porchlight")
         response = requests.get(f'http://porchlight:1234/{state}')
         response.raise_for_status()
-        return jsonify({"success": True, "message": response.json().get('message', 'Light state changed')})
+        return jsonify({"success": True})
     except requests.RequestException as e:
         print(f"Error sending light {state} request: {str(e)}")
         return jsonify({"success": False})
@@ -222,7 +228,7 @@ def wave_auth():
         return jsonify({"success": False, "message": "Access token is required"}), 400
     try:
         result = requests.post('http://wave:1234/auth', json={'access_token': access_token}, timeout=5)
-        result.raise_for_status()  # Raises an HTTPError for bad responses (4xx or 5xx)
+        result.raise_for_status() 
         return jsonify({"success": result.json().get('success', False), "message": result.json().get('message', 'Authentication completed')})
     except requests.exceptions.RequestException as e:
         print(f"Error during Wave authentication: {str(e)}")
@@ -252,7 +258,7 @@ def wave_status():
 @app.route('/wave', methods=['POST'])
 def wave_control():
     on = request.args.get('on', '').lower() == 'true'
-    
+
     try:
         if on:
             start_service('wave')
