@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request
 import threading
 from byf_api_client import BYFAPIClient
-from utils import restart_service
+from utils import restart_service, start_service, stop_service
 import requests
 
 app = Flask(__name__)
@@ -248,6 +248,20 @@ def wave_status():
             return jsonify({"success": True})
         else:
             return jsonify({"success": False}), 500
+        
+@app.route('/wave', methods=['POST'])
+def wave_control():
+    on = request.args.get('on', '').lower() == 'true'
+    
+    try:
+        if on:
+            start_service('wave')
+        else:
+            stop_service('wave')
+        return jsonify({"success": True})
+    except Exception as e:
+        print(f"Error controlling wave: {str(e)}")
+        return jsonify({"success": False})
 
 if __name__ == '__main__':
     threading.Thread(target=byf_client.start_polling, daemon=True).start()
