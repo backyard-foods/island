@@ -4,7 +4,6 @@ from byf_api_client import BYFAPIClient
 from utils import restart_service, start_service, stop_service
 import requests
 import pygame
-import os
 
 app = Flask(__name__)
 
