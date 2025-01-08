@@ -3,10 +3,22 @@ import threading
 from byf_api_client import BYFAPIClient
 from utils import restart_service, start_service, stop_service
 import requests
+import pygame
+import os
 
 app = Flask(__name__)
 
 byf_client = BYFAPIClient()
+
+pygame.mixer.init(
+    frequency=22050,
+    size=-16,
+    channels=1,
+    buffer=2048
+)
+
+SUCCESS_SOUND = pygame.mixer.Sound('success.wav')
+SUCCESS_SOUND.set_volume(1.0)
 
 def capture_image(trigger):
     try:
@@ -57,6 +69,9 @@ def print_receipt_async(order, upcs, details, message, wait):
 
 @app.route('/receipt/print')
 def print_receipt():
+    SUCCESS_SOUND.play()
+    print("Playing sound...")
+    
     image_error = False
     image_capture = 'trigger' in request.args
     if image_capture:

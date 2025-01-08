@@ -9,3 +9,5 @@ click==8.0.4
 #Compatibility
 importlib-metadata==4.8.3
 zipp==3.6.0
+#Audio
+pygame==2.5.2

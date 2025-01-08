@@ -6,6 +6,14 @@ FROM balenalib/%%BALENA_ARCH%%-python:3.8.16-run
 # Install usbutils for usb device detection
 RUN install_packages usbutils git
 
+# Install system dependencies for audio
+RUN apt-get update && apt-get install -y \
+    libglib2.0-0 \
+    libsndfile1 \
+    libasound2 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 # Set our working directory
 WORKDIR /usr/src/app
 

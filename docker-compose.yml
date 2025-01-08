@@ -43,7 +43,7 @@ services:
     labels:
       io.balena.features.supervisor-api: '1'
     environment:
-      RECEIPT_PRINTER_KIOSK: false
+      RECEIPT_PRINTER_KIOSK: true
   baywatch:
     build: ./baywatch
     restart: always
