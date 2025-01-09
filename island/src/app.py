@@ -16,7 +16,7 @@ pygame.mixer.init(
     buffer=2048
 )
 
-SUCCESS_SOUND = pygame.mixer.Sound('success.wav')
+SUCCESS_SOUND = pygame.mixer.Sound('success2.wav')
 SUCCESS_SOUND.set_volume(1.0)
 
 def capture_image(trigger):
