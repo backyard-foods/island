@@ -1,6 +1,11 @@
 FROM balenalib/%%BALENA_MACHINE_NAME%%-python:3.7-latest-build 
 
-RUN apt-get -y install curl && curl -sL https://dtcooper.github.io/raspotify/install.sh | sh
+# Copy the local raspotifyinstall script
+COPY install.sh /tmp/install.sh
+COPY raspotify_0.45.0.librespot.v0.5.0-84d28e8_arm64.deb /tmp/raspotify.deb
+
+# Make it executable and run it
+RUN chmod +x /tmp/install.sh && /tmp/install.sh
 
 WORKDIR /usr/src/app
 
