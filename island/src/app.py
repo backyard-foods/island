@@ -4,6 +4,7 @@ from byf_api_client import BYFAPIClient
 from utils import restart_service, start_service, stop_service
 import requests
 import pygame
+import time
 
 app = Flask(__name__)
 
@@ -15,6 +16,8 @@ pygame.mixer.init(
     channels=1,
     buffer=2048
 )
+
+WAVE_RESTART_TIME_S = 10
 
 SUCCESS_SOUND = pygame.mixer.Sound('success2.wav')
 SUCCESS_SOUND.set_volume(1.0)
@@ -284,6 +287,12 @@ def wave_control():
     except Exception as e:
         print(f"Error controlling wave: {str(e)}")
         return jsonify({"success": False})
+    
+@app.route('/wave/restart')
+def wave_restart():
+    restart_service('wave')
+    time.sleep(WAVE_RESTART_TIME_S)
+    return jsonify({"success": True})
 
 if __name__ == '__main__':
     threading.Thread(target=byf_client.start_polling, daemon=True).start()
