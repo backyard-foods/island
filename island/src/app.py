@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request
 import threading
 from byf_api_client import BYFAPIClient
-from utils import restart_service, start_service, stop_service
+from utils import restart_service, start_service, stop_service, get_service_status
 import requests
 import pygame
 import time
@@ -17,7 +17,9 @@ pygame.mixer.init(
     buffer=2048
 )
 
-WAVE_RESTART_TIME_S = 10
+SERVICE_STOP_START_MIN_TIME_S = 5
+SERVICE_STOP_START_TIMEOUT_S = 15
+SERVICE_STOP_START_CHECK_INTERVAL_S = 1
 
 SUCCESS_SOUND = pygame.mixer.Sound('success2.wav')
 SUCCESS_SOUND.set_volume(1.0)
@@ -277,12 +279,24 @@ def wave_control():
     on = request.args.get('on', '').lower() == 'true'
 
     try:
+        x = 0
         if on:
             print("Starting wave from wave control")
             start_service('wave')
+            while get_service_status('wave').lower() != 'running':
+                x += 1
+                time.sleep(SERVICE_STOP_START_CHECK_INTERVAL_S)
+                if x > SERVICE_STOP_START_TIMEOUT_S:
+                    return jsonify({"success": False, "message": "Wave service failed to start"})
         else:
             print("Stopping wave from wave control")
             stop_service('wave')
+            x = 0
+            while get_service_status('wave').lower() != 'exited':
+                x += 1
+                time.sleep(SERVICE_STOP_START_CHECK_INTERVAL_S)
+                if x > SERVICE_STOP_START_TIMEOUT_S:
+                    return jsonify({"success": False, "message": "Wave service failed to stop"})
         return jsonify({"success": True})
     except Exception as e:
         print(f"Error controlling wave: {str(e)}")
@@ -291,7 +305,13 @@ def wave_control():
 @app.route('/wave/restart')
 def wave_restart():
     restart_service('wave')
-    time.sleep(WAVE_RESTART_TIME_S)
+    x = 0
+    time.sleep(SERVICE_STOP_START_MIN_TIME_S)
+    while get_service_status('wave').lower() != 'running':
+        x += 1
+        time.sleep(SERVICE_STOP_START_CHECK_INTERVAL_S)
+        if x > SERVICE_STOP_START_TIMEOUT_S:
+            return jsonify({"success": False, "message": "Wave service failed to start"})
     return jsonify({"success": True})
 
 if __name__ == '__main__':
