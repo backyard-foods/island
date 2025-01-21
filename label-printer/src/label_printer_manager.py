@@ -464,7 +464,7 @@ class LabelPrinterManager:
 
     def print_qr(self, fulfillment, item):
         self.printer.set(align='center', normal_textsize=True)
-        self.printer.text("Scan for $5 Amazon Gift Card")
+        self.printer.text("Scan for $7 Amazon Gift Card")
         self.printer.ln(2)
         self.printer.qr(content=f"{FEEDBACK_URL}?meta={fulfillment}&item={item}", ec=QR_ECLEVEL_M, size=5, model=2, native=True, center=False, impl=None, image_arguments=None)
         self.clear_label_data_buffer()
