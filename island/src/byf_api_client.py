@@ -11,6 +11,8 @@ LABEL_PRINTER_TIME_BETWEEN_RESTARTS_S = 60
 RECEIPT_PRINTER_RESTART_TIME_S = 15
 RECEIPT_PRINTER_TIME_BETWEEN_RESTARTS_S = 60
 
+TOKEN_EXPIRY_BUFFER_S = 600
+
 class BYFAPIClient:
     def __init__(self):
         self.api_url = os.environ['BYF_API_URL']
@@ -46,10 +48,12 @@ class BYFAPIClient:
         }
         
         try:
+            print(f"Authenticating with {auth_url}")
             auth_response = requests.post(auth_url, json=auth_data, headers=auth_headers)
             auth_response.raise_for_status()
-            self.access_token = auth_response.json()['access_token']
-            self.token_expiry = time.time() + auth_response.json().get('expires_in', 3600)
+            auth_data = auth_response.json()
+            self.access_token = auth_data['access_token']
+            self.token_expiry = auth_data.get('expires_at', time.time() + 3600)
             self.auth_retries = 0
         except requests.exceptions.RequestException as e:
             print(f"Authentication failed: {e}")
@@ -84,6 +88,7 @@ class BYFAPIClient:
             state_response.raise_for_status()
             self.state = state_response.json()
             self.process_state()
+            print(f"Refreshed state successfully")
             return self.state
             
         except requests.exceptions.RequestException as e:
@@ -111,10 +116,11 @@ class BYFAPIClient:
         return False
 
     def is_token_valid(self):
-        return self.access_token and time.time() < self.token_expiry
+        return self.access_token and time.time() < (self.token_expiry - TOKEN_EXPIRY_BUFFER_S)
     
     def get_access_token(self):
         if not self.is_token_valid():
+            print("Token expired, authenticating")
             self.authenticate()
         return self.access_token
 
