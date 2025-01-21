@@ -15,16 +15,22 @@ refresh_container_map() {
 # populate container_map
 refresh_container_map
 
-# refresh container_map every 60 seconds
-while true; do
-	refresh_container_map
-	sleep 60
-done &
+# Initialize the last refresh time
+last_refresh_time=$(date +%s)
 
 # loop to process logs
 while true; do
 	curl -X POST -H "Content-Type: application/json" --no-buffer --data '{"follow":true,"all":true,"format":"short"}' "$BALENA_SUPERVISOR_ADDRESS/v2/journal-logs?apikey=$BALENA_SUPERVISOR_API_KEY" \
 	| while IFS= read -r line; do
+		current_time=$(date +%s)
+		
+		# refresh container_map every 60 seconds
+		if (( current_time - last_refresh_time >= 60 )); then
+			echo "Refreshing container map at $(date)"
+			refresh_container_map
+			last_refresh_time=$current_time
+		fi
+
 		container_id=$(echo "$line" | grep -oE '[a-f0-9]{12}')
 		
 		# check if container_id is not empty and exists in the map
