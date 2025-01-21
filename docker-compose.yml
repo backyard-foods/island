@@ -44,26 +44,20 @@ services:
       io.balena.features.supervisor-api: '1'
     environment:
       RECEIPT_PRINTER_KIOSK: true
-  #baywatch:
-  #  build: ./baywatch
-  #  restart: always
-  #  privileged: true
-  #  environment:
-  #    BYF_API_URL: http://192.168.1.87:54321
-  log_gatherer:
-    build: './log-gatherer'
+  baywatch:
+    build: ./baywatch
+    restart: always
+    privileged: true
+    environment:
+      BYF_API_URL: http://192.168.1.87:54321
+  papertrail:
+    build: './papertrail'
     restart: always
     labels:
       io.balena.features.supervisor-api: 1
       io.balena.features.journal-logs: 1
-  #logspout:
-  #  image: emdem/raspi-logspout
-  #  command: 'syslog+tls://logs.papertrailapp.com:40009'
-  #  restart: always
-  #  labels:
-  #    io.balena.features.balena-socket: '1'
-  #    io.balena.features.supervisor-api: '1'
-  #    io.balena.features.journal-logs: '1'
+    environment:
+      PAPERTRAIL_TOKEN: d2B1ZzLuVYyi8uht9IgpuE9i_sN4
 #  wifi-connect:
 #    build: ./wifi-connect
 #    network_mode: "host"
