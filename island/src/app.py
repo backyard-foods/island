@@ -17,7 +17,7 @@ pygame.mixer.init(
     buffer=2048
 )
 
-SERVICE_STOP_START_MIN_TIME_S = 5
+SERVICE_STOP_START_MIN_TIME_S = 8
 SERVICE_STOP_START_TIMEOUT_S = 15
 SERVICE_STOP_START_CHECK_INTERVAL_S = 1
 
@@ -282,10 +282,13 @@ def wave_control():
         x = 0
         if on:
             print("Starting wave from wave control")
-            start_service('wave')
+            cold_start = get_service_status('wave').lower() != 'running'
+            if cold_start:
+                start_service('wave')
+                time.sleep(SERVICE_STOP_START_MIN_TIME_S)
             while get_service_status('wave').lower() != 'running':
-                x += 1
                 time.sleep(SERVICE_STOP_START_CHECK_INTERVAL_S)
+                x += SERVICE_STOP_START_CHECK_INTERVAL_S
                 if x > SERVICE_STOP_START_TIMEOUT_S:
                     return jsonify({"success": False, "message": "Wave service failed to start"})
         else:
@@ -293,8 +296,8 @@ def wave_control():
             stop_service('wave')
             x = 0
             while get_service_status('wave').lower() != 'exited':
-                x += 1
                 time.sleep(SERVICE_STOP_START_CHECK_INTERVAL_S)
+                x += SERVICE_STOP_START_CHECK_INTERVAL_S
                 if x > SERVICE_STOP_START_TIMEOUT_S:
                     return jsonify({"success": False, "message": "Wave service failed to stop"})
         return jsonify({"success": True})
@@ -308,8 +311,8 @@ def wave_restart():
     x = 0
     time.sleep(SERVICE_STOP_START_MIN_TIME_S)
     while get_service_status('wave').lower() != 'running':
-        x += 1
         time.sleep(SERVICE_STOP_START_CHECK_INTERVAL_S)
+        x += SERVICE_STOP_START_CHECK_INTERVAL_S
         if x > SERVICE_STOP_START_TIMEOUT_S:
             return jsonify({"success": False, "message": "Wave service failed to start"})
     return jsonify({"success": True})
