@@ -55,6 +55,7 @@ class BYFAPIClient:
             self.access_token = auth_data['access_token']
             self.token_expiry = auth_data.get('expires_at', time.time() + 3600)
             self.auth_retries = 0
+            print(f"Authentication successful, token expires at {self.token_expiry}")
         except requests.exceptions.RequestException as e:
             print(f"Authentication failed: {e}")
             raise
@@ -89,6 +90,7 @@ class BYFAPIClient:
             self.state = state_response.json()
             self.process_state()
             print(f"Refreshed state successfully")
+            self.keepalive()
             return self.state
             
         except requests.exceptions.RequestException as e:
@@ -258,6 +260,15 @@ class BYFAPIClient:
             return True
         except requests.exceptions.RequestException as e:
             print(f"[Wave] Failed to notify backend: {e}")
+            return False
+        
+    def keepalive(self):
+        try:
+            response = requests.get('http://reaper:1234/keepalive')
+            response.raise_for_status()
+            return True
+        except requests.RequestException as e:
+            print(f"Error sending keepalive request: {str(e)}")
             return False
 
     def start_polling(self):

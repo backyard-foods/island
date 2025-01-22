@@ -1,0 +1,19 @@
+FROM balenalib/%%BALENA_MACHINE_NAME%%-python:3.7-latest-build 
+
+# Ensure pip build with latest modules
+RUN pip install --upgrade pip setuptools wheel
+
+# Try to install RPi.GPIO from source
+RUN install_packages gcc
+
+WORKDIR /usr/src/app
+
+# Copy requirements.txt first for better cache on later pushes
+COPY requirements.txt requirements.txt
+
+RUN pip install -r requirements.txt
+
+# This will copy all files in our root to the working  directory in the container
+COPY . ./
+
+CMD ["python","-u","src/app.py"]

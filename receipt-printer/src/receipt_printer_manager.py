@@ -152,21 +152,21 @@ class ReceiptPrinterManager:
         printer_status_raw = self.printer._read()
         self.printer.close()
 
-        print(f"Printer status raw: {printer_status_raw}")
+        #print(f"Printer status raw: {printer_status_raw}")
         printer_status_int = int.from_bytes(printer_status_raw, byteorder='big')
-        print(f"Printer status int: {printer_status_int}")
+        #print(f"Printer status int: {printer_status_int}")
         printer_status_bits = bin(printer_status_int)[2:].zfill(8)
-        print(f"Printer status bits: {printer_status_bits}")
+        #print(f"Printer status bits: {printer_status_bits}")
 
         valid_printer_status = printer_status_int in VALID_PRINTER_STATUSES
         offline = valid_printer_status and (printer_status_int & OFFLINE_MASK) == OFFLINE_MASK
         waiting_for_recovery = valid_printer_status and (printer_status_int & WAITING_FOR_RECOVERY_MASK) == WAITING_FOR_RECOVERY_MASK
         paper_feed_button = valid_printer_status and (printer_status_int & PAPER_FEED_BUTTON_MASK) == PAPER_FEED_BUTTON_MASK
 
-        print(f"Valid printer status: {valid_printer_status}")
-        print(f"Offline: {offline}")
-        print(f"Waiting for recovery: {waiting_for_recovery}")
-        print(f"Paper feed button: {paper_feed_button}")
+        #print(f"Valid printer status: {valid_printer_status}")
+        #print(f"Offline: {offline}")
+        #print(f"Waiting for recovery: {waiting_for_recovery}")
+        #print(f"Paper feed button: {paper_feed_button}")
         return {
             'query_error': not valid_printer_status,
             'offline': offline,
@@ -250,19 +250,19 @@ class ReceiptPrinterManager:
         paper_status_raw = self.printer._read()
         self.printer.close()
 
-        print(f"Paper status raw: {paper_status_raw}")
+        #print(f"Paper status raw: {paper_status_raw}")
         paper_status_int = int.from_bytes(paper_status_raw, byteorder='big')
-        print(f"Paper status int: {paper_status_int}")
+        #print(f"Paper status int: {paper_status_int}")
         paper_status_bits = bin(paper_status_int)[2:].zfill(8)
-        print(f"Paper status bits: {paper_status_bits}")
+        #print(f"Paper status bits: {paper_status_bits}")
 
         valid_paper_status = paper_status_int in VALID_PAPER_STATUSES
         paper_out = valid_paper_status and (paper_status_int & PAPER_OUT_MASK) == PAPER_OUT_MASK
         paper_low = valid_paper_status and not paper_out and (paper_status_int & PAPER_LOW_MASK) == PAPER_LOW_MASK
 
-        print(f"Valid paper status: {valid_paper_status}")
-        print(f"Paper out: {paper_out}")
-        print(f"Paper low: {paper_low}")
+        #print(f"Valid paper status: {valid_paper_status}")
+        #print(f"Paper out: {paper_out}")
+        #print(f"Paper low: {paper_low}")
         return {
             'query_error': not valid_paper_status,
             'paper_out': paper_out,
@@ -271,7 +271,6 @@ class ReceiptPrinterManager:
 
     def get_status(self):
         with self.lock:
-            print(f"Last ")
             self.throttle(printing=False)
             status = "unknown"
             reason = None
