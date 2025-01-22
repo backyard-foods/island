@@ -11,7 +11,11 @@ LABEL_PRINTER_TIME_BETWEEN_RESTARTS_S = 60
 RECEIPT_PRINTER_RESTART_TIME_S = 15
 RECEIPT_PRINTER_TIME_BETWEEN_RESTARTS_S = 60
 
-TOKEN_EXPIRY_BUFFER_S = 600
+REQUEST_TIMEOUT_INTERNAL_S = 2
+REQUEST_TIMEOUT_EXTERNAL_S = 8
+
+TOKEN_EXPIRY_BUFFER_S = 15
+TOKEN_EXPIRY_BUFFER_S_PROACTIVE = 600
 
 class BYFAPIClient:
     def __init__(self):
@@ -24,8 +28,8 @@ class BYFAPIClient:
         self.device_type = 'island'
         self.access_token = None
         self.token_expiry = 0 
+        self.last_token_refresh = 0
         self.state = None
-        self.auth_retries = 0
         self.poll_interval = POLL_INTERVAL_S
         self.temp_sensor_manager = TempSensorManager()
         self.temp_sensor_manager.start_temperature_checking()
@@ -37,6 +41,8 @@ class BYFAPIClient:
         self.receipt_printer_last_restart = 0
 
     def authenticate(self):
+        self.last_token_refresh = time.time()
+
         auth_url = f"{self.api_url}/auth/v1/token?grant_type=password"
         auth_data = {
             "email": self.user,
@@ -49,12 +55,11 @@ class BYFAPIClient:
         
         try:
             print(f"Authenticating with {auth_url}")
-            auth_response = requests.post(auth_url, json=auth_data, headers=auth_headers)
+            auth_response = requests.post(auth_url, json=auth_data, headers=auth_headers, timeout=REQUEST_TIMEOUT_EXTERNAL_S)
             auth_response.raise_for_status()
             auth_data = auth_response.json()
             self.access_token = auth_data['access_token']
             self.token_expiry = auth_data.get('expires_at', time.time() + 3600)
-            self.auth_retries = 0
             print(f"Authentication successful, token expires at {self.token_expiry}")
         except requests.exceptions.RequestException as e:
             print(f"Authentication failed: {e}")
@@ -78,14 +83,12 @@ class BYFAPIClient:
             "receiptPrinterReason": self.receipt_printer_reason,
         }
 
-        # Check if the token is valid, if not, authenticate
-        if not self.is_token_valid():
-            self.authenticate()
+        self.get_access_token()
         
         try:
             print(f"Getting device state from {state_url}")
             temperature_events = self.temp_sensor_manager.get_events()
-            state_response = requests.post(state_url, headers=state_headers, params=state_url_params, json=temperature_events)
+            state_response = requests.post(state_url, headers=state_headers, params=state_url_params, json=temperature_events, timeout=REQUEST_TIMEOUT_EXTERNAL_S)
             state_response.raise_for_status()
             self.state = state_response.json()
             self.process_state()
@@ -95,12 +98,6 @@ class BYFAPIClient:
             
         except requests.exceptions.RequestException as e:
             print(f"Failed to get device state: {e}")
-            if self.auth_retries < 3:
-                print(f"Retrying authentication... ({self.auth_retries}/3)")
-                self.auth_retries += 1
-                self.authenticate()
-                return self.get_state()
-            raise
 
     def process_state(self):
         if self.state and 'store' in self.state:
@@ -109,22 +106,31 @@ class BYFAPIClient:
 
             try:
                 print(f"Making sure lights are {state}")
-                response = requests.get(f'http://porchlight:1234/{state}')
+                response = requests.get(f'http://porchlight:1234/{state}', timeout=REQUEST_TIMEOUT_INTERNAL_S)
                 response.raise_for_status()
                 return True
             except requests.RequestException as e:
                 print(f"Error sending light {state} request: {str(e)}")
                 return False
         return False
-
-    def is_token_valid(self):
-        return self.access_token and time.time() < (self.token_expiry - TOKEN_EXPIRY_BUFFER_S)
     
     def get_access_token(self):
+        if self.should_proactively_refresh_token():
+            print("Proactively refreshing token")
+            self.authenticate()
         if not self.is_token_valid():
             print("Token expired, authenticating")
             self.authenticate()
         return self.access_token
+    
+    def is_token_valid(self):
+        return self.access_token and time.time() < (self.token_expiry - TOKEN_EXPIRY_BUFFER_S)
+    
+    def should_proactively_refresh_token(self):
+        if time.time() > self.last_token_refresh + 15:
+            if time.time() > (self.token_expiry - TOKEN_EXPIRY_BUFFER_S_PROACTIVE):
+                return True
+        return False
 
     def handle_printer_status(self):
         self.handle_label_printer_status()
@@ -144,7 +150,7 @@ class BYFAPIClient:
         reason = None
 
         try:
-            response = requests.get('http://receipt-printer:1234/status')
+            response = requests.get('http://receipt-printer:1234/status', timeout=REQUEST_TIMEOUT_INTERNAL_S)
             response.raise_for_status()
             status = response.json().get('status', None)
             reason = response.json().get('reason', None)
@@ -167,8 +173,7 @@ class BYFAPIClient:
         return self.receipt_printer_status, self.receipt_printer_reason
     
     def notify_print_success(self, order):
-        if not self.is_token_valid():
-            self.authenticate()
+        self.get_access_token()
 
         notify_url = f"{self.api_url}/functions/v1/print"
         notify_headers = {
@@ -180,7 +185,7 @@ class BYFAPIClient:
         }
 
         try:
-            notify_response = requests.post(notify_url, json=notify_body, headers=notify_headers)
+            notify_response = requests.post(notify_url, json=notify_body, headers=notify_headers, timeout=REQUEST_TIMEOUT_EXTERNAL_S)
             notify_response.raise_for_status()
             print("[Receipt Printer] Successfully notified backend of print completion")
         except requests.exceptions.RequestException as e:
@@ -197,7 +202,7 @@ class BYFAPIClient:
         reason = None
 
         try:
-            response = requests.get('http://label-printer:1234/status')
+            response = requests.get('http://label-printer:1234/status', timeout=REQUEST_TIMEOUT_INTERNAL_S)
             response.raise_for_status()
             status = response.json().get('status', None)
             reason = response.json().get('reason', None)
@@ -220,8 +225,7 @@ class BYFAPIClient:
         return self.label_printer_status, self.label_printer_reason
     
     def notify_label_success(self, fulfillment):
-        if not self.is_token_valid():
-            self.authenticate()
+        self.get_access_token()
 
         notify_url = f"{self.api_url}/functions/v1/print-label"
         notify_headers = {
@@ -233,7 +237,7 @@ class BYFAPIClient:
         }
 
         try:
-            notify_response = requests.post(notify_url, json=notify_body, headers=notify_headers)
+            notify_response = requests.post(notify_url, json=notify_body, headers=notify_headers, timeout=REQUEST_TIMEOUT_EXTERNAL_S)
             notify_response.raise_for_status()
             print("[Label Printer] Successfully notified backend of label print completion")
         except requests.exceptions.RequestException as e:
@@ -241,8 +245,7 @@ class BYFAPIClient:
             raise
 
     def notify_wave_status(self, status):
-        if not self.is_token_valid():
-            self.authenticate()
+        self.get_access_token()
 
         notify_url = f"{self.api_url}/functions/v1/wave-status"
         notify_headers = {
@@ -254,7 +257,7 @@ class BYFAPIClient:
         }
 
         try:
-            notify_response = requests.post(notify_url, json=notify_body, headers=notify_headers)
+            notify_response = requests.post(notify_url, json=notify_body, headers=notify_headers, timeout=REQUEST_TIMEOUT_EXTERNAL_S)
             notify_response.raise_for_status()
             print("[Wave] Successfully notified backend of wave status")
             return True
@@ -264,7 +267,7 @@ class BYFAPIClient:
         
     def keepalive(self):
         try:
-            response = requests.get('http://reaper:1234/keepalive')
+            response = requests.get('http://reaper:1234/keepalive', timeout=REQUEST_TIMEOUT_INTERNAL_S)
             response.raise_for_status()
             return True
         except requests.RequestException as e:

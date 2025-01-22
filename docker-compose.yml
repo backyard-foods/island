@@ -65,7 +65,7 @@ services:
     labels:
       io.balena.features.supervisor-api: '1'
     environment:
-      SCHEDULED_REBOOT_TIME_UTC: '19:12'
+      SCHEDULED_REBOOT_TIME_UTC: '10:00'
 #  wifi-connect:
 #    build: ./wifi-connect
 #    network_mode: "host"
