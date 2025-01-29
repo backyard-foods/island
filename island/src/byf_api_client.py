@@ -102,7 +102,8 @@ class BYFAPIClient:
     def process_state(self):
         if self.state and 'store' in self.state:
             store_open = self.state['store'].get('open', False)
-            state = 'on' if store_open else 'off'
+            store_paused = self.state['store'].get('paused', False)
+            state = 'on' if store_open and not store_paused else 'off'
 
             try:
                 print(f"Making sure lights are {state}")
