@@ -8,7 +8,7 @@ RUN curl -sS http://archive.raspberrypi.org/debian/raspberrypi.gpg.key | gpg --d
 RUN echo "deb [signed-by=/etc/apt/trusted.gpg.d/raspberrypi.gpg.key] http://archive.raspberrypi.org/debian/ bookworm main" >> /etc/apt/sources.list.d/raspi.list
 
 # Install the python camera packages
-RUN install_packages python3-libcamera python3-picamera2
+RUN install_packages python3-libcamera python3-picamera2 ffmpeg
 
 COPY start.sh ./
 

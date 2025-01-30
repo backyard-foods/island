@@ -35,6 +35,17 @@ def capture_image(trigger):
         print(f"Error capturing image: {str(e)}")
         return {"success": False, "message": "Error capturing image"}
 
+def capture_recording(trigger):
+    try:
+        print(f"Sending record request to baywatch with trigger: {trigger}")
+        token = byf_client.get_access_token()
+        response = requests.get(f'http://baywatch:1234/record?token={token}&trigger={trigger}')
+        response.raise_for_status()
+        return {"success": True, "message": "Recording request sent"}
+    except requests.RequestException as e:
+        print(f"Recording failed: {str(e)}")
+        return {"success": False, "message": "Recording failed"}
+
 def detect_image(trigger):
     print(f"Sending detect request to baywatch with trigger: {trigger}")
     token = byf_client.get_access_token()
@@ -192,6 +203,12 @@ def reload_label_paper():
 def capture():
     trigger = request.args.get('trigger', '')
     result = capture_image(trigger)
+    return jsonify(result)
+
+@app.route('/image/record')
+def record():
+    trigger = request.args.get('trigger', '')
+    result = capture_recording(trigger)
     return jsonify(result)
 
 @app.route('/image/detect')

@@ -5,6 +5,9 @@ from picamera2 import Picamera2
 import threading
 import io
 import cv2
+from picamera2.encoders import H264Encoder
+from picamera2.outputs import FfmpegOutput
+import tempfile
 
 LOG_PREFIX = "[camera]"
 COOLDOWN = 0.25
@@ -74,6 +77,77 @@ class CameraManager:
     def capture_and_upload(self, bearer_token, trigger=""):
         threading.Thread(target=self.capture_and_upload_thread, args=(bearer_token, trigger), daemon=True).start()
         return {"success": True, "message": "Capture and upload started"}
+    
+    def capture_video_to_memory(self, duration=5):
+        with self.lock:
+            self.throttle()
+            output = "test.h264"
+            try:
+                self.camera.configure(self.camera.create_video_configuration())
+
+                encoder = H264Encoder(bitrate=500000)
+
+                self.camera.start_encoder(encoder, output)
+                self.camera.start()
+
+                print(f"Sleeping for {duration} seconds")
+                time.sleep(duration)
+
+                print(f"Stopping recording")
+                self.camera.stop_recording()
+
+                # Read the temporary file into memory
+                with open(output, "rb") as f:
+                    video_data = f.read()
+
+                return video_data
+
+            except Exception as e:
+                print(f"Error capturing video: {e}")
+                return None
+
+            finally:
+                self.camera.stop()
+                # Switch back to preview configuration
+                self.camera.configure(self.camera.create_preview_configuration(
+                    main={"format": 'XRGB8888', "size": (2304, 1296)}
+                ))
+                if output and os.path.exists(output):
+                    os.remove(output)
+
+    def upload_video(self, video_data, bearer_token, trigger=""):
+        base_url = os.environ['BYF_API_URL']
+        url = f"{base_url}/functions/v1/image"
+        try:
+            files = {"file": ("video.h264", video_data, "video/h264")}
+            data = {"trigger": trigger}
+            headers = {"Authorization": f"Bearer {bearer_token}"}
+            response = requests.post(url, files=files, data=data, headers=headers)
+            response.raise_for_status()
+            print("Video uploaded successfully.")
+            return True
+        except requests.exceptions.RequestException as e:
+            print(f"Error uploading video: {e}")
+            return False
+
+    def record_and_upload_thread(self, bearer_token, trigger=""):
+        video_data = self.capture_video_to_memory()
+        if video_data:
+            return self.upload_video(video_data, bearer_token, trigger=trigger)
+        else:
+            print("Video capture failed. No data to upload.")
+            return False
+
+    def record_and_upload(self, bearer_token, trigger=""):
+        """
+        Start a background thread that captures a 10-second video, then uploads it.
+        """
+        threading.Thread(
+            target=self.record_and_upload_thread, 
+            args=(bearer_token, trigger),
+            daemon=True
+        ).start()
+        return {"success": True, "message": "Record and upload started"}
         
     def runtime_error(self, message):
         print(f"Runtime error: {message}")

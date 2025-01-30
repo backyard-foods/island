@@ -14,9 +14,22 @@ def capture():
     
     print("Capturing image")
     if camera_manager.capture_and_upload(token, trigger):
-        return jsonify({"success": True, "message": "Image captured"})
+        return jsonify({"success": True, "message": "Capture started"})
     else:
-        return jsonify({"success": False, "message": "Image capture failed"}), 500
+        return jsonify({"success": False, "message": "Capture failed"}), 500
+    
+@app.route('/record')
+def record():
+    token = request.args.get('token')
+    trigger = request.args.get('trigger', '')
+    if not token:
+        return jsonify({"success": False, "message": "Token is required"}), 400
+    
+    print("Recording clip")
+    if camera_manager.record_and_upload(token, trigger):
+        return jsonify({"success": True, "message": "Recording started"})
+    else:
+        return jsonify({"success": False, "message": "Recording failed"}), 500
     
 @app.route('/detect')
 def detect():
