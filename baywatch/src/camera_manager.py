@@ -1,17 +1,23 @@
 import os
 import requests
 import time
-from picamera2 import Picamera2
+from picamera2 import Picamera2, MappedArray
 import threading
 import io
 import cv2
 from picamera2.encoders import H264Encoder
 from picamera2.outputs import FfmpegOutput
-import tempfile
+from datetime import datetime
 
 LOG_PREFIX = "[camera]"
 COOLDOWN = 0.25
 DETECTION_INTERVAL = 30
+
+HIGH_FRAME_RATE_CAPTURE_EVERY_N = 6
+LOW_FRAME_RATE_CAPTURE_EVERY_N = 30
+BIT_RATE_KBPS = 400
+DEFAULT_CAPTURE_DURATION_M = 3
+MONITORING_CAPTURE_DURATION_S = 30
 
 class CameraManager:
     def __init__(self):
@@ -24,6 +30,7 @@ class CameraManager:
         self.cooldown = COOLDOWN
         self.last_request_time = 0
         self.last_detection_time = 0
+        self.pending_recording = False
         self.lock = threading.Lock()
 
     def capture_image_to_memory(self):
@@ -78,26 +85,41 @@ class CameraManager:
         threading.Thread(target=self.capture_and_upload_thread, args=(bearer_token, trigger), daemon=True).start()
         return {"success": True, "message": "Capture and upload started"}
     
-    def capture_video_to_memory(self, duration=5):
+    def capture_video_to_memory(self, duration=DEFAULT_CAPTURE_DURATION_M * 60, monitoring_mode=False):
+        if monitoring_mode:
+            if self.lock.locked():
+                print("Camera is locked, skipping video capture")
+                return None
+        else:
+            self.pending_recording = True
+        
         with self.lock:
+            self.pending_recording = False
             self.throttle()
-            output = "test.h264"
+            filename = "temp.mp4"
             try:
-                self.camera.configure(self.camera.create_video_configuration())
+                self.camera.configure(self.camera.create_video_configuration(main={"size": (1600, 1296)}, controls={"ExposureValue": 0.75}))
 
-                encoder = H264Encoder(bitrate=500000)
-
+                encoder = H264Encoder(bitrate=BIT_RATE_KBPS * 1000)
+                encoder.frame_skip_count = LOW_FRAME_RATE_CAPTURE_EVERY_N if monitoring_mode else HIGH_FRAME_RATE_CAPTURE_EVERY_N
+                output = FfmpegOutput(filename)
+                
+                self.camera.pre_callback = self.apply_timestamp
                 self.camera.start_encoder(encoder, output)
                 self.camera.start()
 
-                print(f"Sleeping for {duration} seconds")
-                time.sleep(duration)
+                print(f"Recording for {duration} seconds")
+                for i in range(duration):
+                    if self.pending_recording:
+                        print(f"Stopping recording early")
+                        self.camera.stop_recording()
+                        break
+                    time.sleep(1)
 
                 print(f"Stopping recording")
                 self.camera.stop_recording()
 
-                # Read the temporary file into memory
-                with open(output, "rb") as f:
+                with open(filename, "rb") as f:
                     video_data = f.read()
 
                 return video_data
@@ -108,18 +130,39 @@ class CameraManager:
 
             finally:
                 self.camera.stop()
-                # Switch back to preview configuration
                 self.camera.configure(self.camera.create_preview_configuration(
                     main={"format": 'XRGB8888', "size": (2304, 1296)}
                 ))
-                if output and os.path.exists(output):
-                    os.remove(output)
+                if filename and os.path.exists(filename):
+                    os.remove(filename)
+
+    def apply_timestamp(self, request):
+        colour = (255, 255, 255)
+        background_colour = (0, 0, 0)
+        origin = (0, 30)
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        scale = 1
+        thickness = 2
+
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        with MappedArray(request, "main") as m:
+            text_size, baseline = cv2.getTextSize(timestamp, font, scale, thickness)
+            text_width, text_height = text_size
+
+            x, y = origin
+            top_left = (x, y - text_height - baseline)
+            bottom_right = (x + text_width, y + baseline)
+
+            cv2.rectangle(m.array, top_left, bottom_right, background_colour, -1)
+
+            cv2.putText(m.array, timestamp, origin, font, scale, colour, thickness)
 
     def upload_video(self, video_data, bearer_token, trigger=""):
         base_url = os.environ['BYF_API_URL']
         url = f"{base_url}/functions/v1/image"
         try:
-            files = {"file": ("video.h264", video_data, "video/h264")}
+            files = {"file": ("video.mp4", video_data, "video/mp4")}
             data = {"trigger": trigger}
             headers = {"Authorization": f"Bearer {bearer_token}"}
             response = requests.post(url, files=files, data=data, headers=headers)
@@ -130,8 +173,8 @@ class CameraManager:
             print(f"Error uploading video: {e}")
             return False
 
-    def record_and_upload_thread(self, bearer_token, trigger=""):
-        video_data = self.capture_video_to_memory()
+    def record_and_upload_thread(self, bearer_token, trigger="", duration=DEFAULT_CAPTURE_DURATION_M * 60, monitoring_mode=False):
+        video_data = self.capture_video_to_memory(duration, monitoring_mode)
         if video_data:
             return self.upload_video(video_data, bearer_token, trigger=trigger)
         else:
@@ -139,14 +182,18 @@ class CameraManager:
             return False
 
     def record_and_upload(self, bearer_token, trigger=""):
-        """
-        Start a background thread that captures a 10-second video, then uploads it.
-        """
-        threading.Thread(
-            target=self.record_and_upload_thread, 
-            args=(bearer_token, trigger),
-            daemon=True
-        ).start()
+        if trigger == "monitoring":
+            threading.Thread(
+                target=self.record_and_upload_thread, 
+                args=(bearer_token, trigger, MONITORING_CAPTURE_DURATION_S, True),
+                daemon=True
+            ).start()
+        else:
+            threading.Thread(
+                target=self.record_and_upload_thread, 
+                args=(bearer_token, trigger),
+                daemon=True
+            ).start()
         return {"success": True, "message": "Record and upload started"}
         
     def runtime_error(self, message):
@@ -162,7 +209,7 @@ class CameraManager:
             start_time = time.time()
             print("Starting detection")
             face_detected = False
-            while time.time() - start_time < DETECTION_INTERVAL and not face_detected:  # Run for 30 seconds or until a face is detected
+            while time.time() - start_time < DETECTION_INTERVAL and not face_detected: 
                 im = self.camera.capture_array()
 
                 grey = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
@@ -186,7 +233,6 @@ class CameraManager:
 
         if face_detected:
             print("Object detected! Exiting test.")
-            # Capture the image and upload it
             image_data = cv2.imencode('.jpg', im)[1].tobytes()
             self.upload_image(image_data, bearer_token, trigger=trigger)
         else:
@@ -199,14 +245,12 @@ class CameraManager:
 
         cascade_path = "src/haarcascade_frontalface_default.xml"
 
-        # Check if the file exists
         if not os.path.isfile(cascade_path):
             print(f"Error: Cascade file not found at {cascade_path}")
             return {"success": False, "message": "Cascade file not found"}
 
         face_detector = cv2.CascadeClassifier(cascade_path)
         
-        # Check if the classifier is empty
         if face_detector.empty():
             print("Error: Failed to load cascade classifier")
             return {"success": False, "message": "Failed to load cascade classifier"}
@@ -214,7 +258,6 @@ class CameraManager:
         self.last_detection_time = time.time()
         threading.Thread(target=self.detection_thread, args=(bearer_token, face_detector, trigger), daemon=True).start()
         return {"success": True, "message": "Detection started"}
-
 
     def close(self):
         self.camera.close()
