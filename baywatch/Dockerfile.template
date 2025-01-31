@@ -26,6 +26,8 @@ RUN chmod +x start.sh
 
 ENV UDEV=on
 
+ENV TZ=America/New_York
+
 CMD ["sh","./start.sh"]
 
 CMD ["python","-u","src/app.py"]
