@@ -17,6 +17,8 @@ REQUEST_TIMEOUT_EXTERNAL_S = 10
 TOKEN_EXPIRY_BUFFER_S = 15
 TOKEN_EXPIRY_BUFFER_S_PROACTIVE = 600
 
+VIDEO_MONITORING_INTERVAL_M = 2
+
 class BYFAPIClient:
     def __init__(self):
         self.api_url = os.environ['BYF_API_URL']
@@ -39,6 +41,7 @@ class BYFAPIClient:
         self.receipt_printer_status = None
         self.receipt_printer_reason = None
         self.receipt_printer_last_restart = 0
+        self.last_video_monitoring_attempt = 1
 
     def authenticate(self):
         self.last_token_refresh = time.time()
@@ -274,11 +277,24 @@ class BYFAPIClient:
         except requests.RequestException as e:
             print(f"Error sending keepalive request: {str(e)}")
             return False
+        
+    def start_video_monitoring(self):
+        self.last_video_monitoring_attempt = time.time()
+        access_token = self.get_access_token()
+        try:
+            response = requests.get(f'http://baywatch:1234/record?token={access_token}&trigger=monitoring', timeout=REQUEST_TIMEOUT_INTERNAL_S)
+            response.raise_for_status()
+            return True
+        except requests.RequestException as e:
+            print(f"Error sending video monitoring request: {str(e)}")
+            return False
 
     def start_polling(self):
         while True:
             try:
                 self.get_state()
+                if self.last_video_monitoring_attempt and time.time() - self.last_video_monitoring_attempt > VIDEO_MONITORING_INTERVAL_M * 60:
+                    self.start_video_monitoring()
             except Exception as e:
                 print(f"Error getting state: {e}")
             time.sleep(self.poll_interval)
