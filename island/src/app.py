@@ -93,8 +93,10 @@ def print_receipt():
         try:
             if request.args.get('image') == 'true':
                 capture_image(request.args.get('trigger'))
-            if request.args.get('detect') == 'true':
+            elif request.args.get('detect') == 'true':
                 detect_image(request.args.get('trigger')) 
+            elif request.args.get('record') == 'true':
+                capture_recording(request.args.get('trigger'))
         except Exception as e:
             image_error = True
             print(f"Error capturing image: {str(e)}")
@@ -159,8 +161,10 @@ def print_label():
         try:
             if request.args.get('image') == 'true':
                 capture_image(request.args.get('trigger'))
-            if request.args.get('detect') == 'true':
+            elif request.args.get('detect') == 'true':
                 detect_image(request.args.get('trigger'))
+            elif request.args.get('record') == 'true':
+                capture_recording(request.args.get('trigger'))
         except Exception as e:
             image_error = True
             print(f"Error capturing image: {str(e)}")
