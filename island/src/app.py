@@ -72,7 +72,16 @@ def configure_receipt_printer():
 
 def print_receipt_async(order, upcs, details, message, wait):
     try:
-        success = requests.get(f'http://receipt-printer:1234/print?order={order}&upcs={upcs}&details={details}&message={message}&wait={wait}').json().get('success', False)
+        params = {
+            "order": order,
+            "upcs": upcs,
+            "details": details,
+            "message": message,
+            "wait": wait
+        }
+        response = requests.get("http://receipt-printer:1234/print", params=params)
+        response.raise_for_status()
+        success = response.json().get('success', False)
         print(f"Receipt print success: {success}")
         if success:
             byf_client.notify_print_success(order)
@@ -144,7 +153,18 @@ def configure_label_printer():
 
 def print_label_async(order, item, upcs, item_number, item_total, fulfillment, paid):
     try:
-        success = requests.get(f'http://label-printer:1234/print?order={order}&item={item}&upcs={upcs}&item_number={item_number}&item_total={item_total}&fulfillment={fulfillment}&paid={paid}').json().get('success', False)
+        params = {
+            "order": order,
+            "item": item,
+            "upcs": upcs,
+            "item_number": item_number,
+            "item_total": item_total,
+            "fulfillment": fulfillment,
+            "paid": paid
+        }
+        response = requests.get("http://label-printer:1234/print", params=params)
+        response.raise_for_status()
+        success = response.json().get('success', False)
         print(f"Label print success: {success}")
         if fulfillment and success:
             byf_client.notify_label_success(fulfillment)
