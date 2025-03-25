@@ -50,14 +50,14 @@ services:
     privileged: true
     environment:
       BYF_API_URL: http://192.168.0.146:54321
-  papertrail:
-    build: './papertrail'
-    restart: always
-    labels:
-      io.balena.features.supervisor-api: 1
-      io.balena.features.journal-logs: 1
-    environment:
-      PAPERTRAIL_TOKEN: d2B1ZzLuVYyi8uht9IgpuE9i_sN4
+ # papertrail:
+ #   build: './papertrail'
+ #   restart: always
+ #   labels:
+ #     io.balena.features.supervisor-api: 1
+ #     io.balena.features.journal-logs: 1
+ #   environment:
+ #     PAPERTRAIL_TOKEN: d2B1ZzLuVYyi8uht9IgpuE9i_sN4
   reaper:
     build: ./reaper
     restart: always
