@@ -9,7 +9,7 @@ from utils import format_string
 # ~270x50 PNG, black on transparent
 LOGO_PATH = "receipt-logo.png"
 
-LOGO_FRAGMENT_HEIGHT = 20
+LOGO_FRAGMENT_HEIGHT = 100
 LOGO_SLEEP_BETWEEN_FRAGMENTS_MS = 0
 SLEEP_BETWEEN_SEGMENTS_MS = 50
 
