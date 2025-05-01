@@ -359,16 +359,12 @@ class ReceiptPrinterManager:
                 return False
             try:
                 self.start_print_job()
-                instructions = ""
-                if wait:
-                    instructions = f"Pay at register. Your order will be ready in {wait} minutes."
-                else:
-                    instructions = "Pay at register"
+                instructions = "PAY AT REGISTER"
 
                 self.print_logo()
                 self.print_heading(order)
+                self.print_message(instructions, bold=True)
                 self.print_details(details)
-                self.print_message(instructions)
                 
                 if(upcs):
                     try:
@@ -401,7 +397,6 @@ class ReceiptPrinterManager:
         self.printer.close()
 
     def print_logo(self):
-        self.printer.ln(1)
         self.printer.image(LOGO_PATH,
                            high_density_vertical=True, 
                            high_density_horizontal=True, 
@@ -415,7 +410,7 @@ class ReceiptPrinterManager:
             print(f"Printing heading")
             self.printer.ln(1)
             self.printer.set(align='center', double_height=True, double_width=True, bold=True, density=3)
-            self.printer.text(format_string(f"Order #: {str(order).title()}", double_size=True, flip=False))
+            self.printer.text(format_string(f"{str(order).title()}", double_size=True, flip=False))
             self.printer.set(align='center', normal_textsize=True, flip=False)
             self.clear_receipt_data_buffer()
         else:  
@@ -447,12 +442,14 @@ class ReceiptPrinterManager:
         else:
             print(f"No UPC provided, skipping barcode")
 
-    def print_message(self, message):
+    def print_message(self, message, bold=False):
         if message:
             print(f"Printing message")
             self.printer.ln(2)
-            self.printer.set(align='center', normal_textsize=True)
+            self.printer.set(align='center', normal_textsize=True, bold=bold)
             self.printer.text(format_string(message, double_size=False, flip=False))
+            if bold: 
+                self.printer.set(align='center', normal_textsize=True, bold=False)
             self.clear_receipt_data_buffer()
         else:
             print(f"No message provided, skipping message")
