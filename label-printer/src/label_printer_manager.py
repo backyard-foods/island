@@ -101,7 +101,7 @@ class LabelPrinterManager:
             pL = b'\x04' # data length low byte
             pH = b'\x00' # data length high byte
             fn = b'\x05' # function code 5
-            a = b'\x0E' # buzzer setting (14)
+            a = b'\x0E' # paper removal standby setting (14)
             nL = b'\x00' # 0 (x00) for off, 64 (x40) for on
             if paper_removal_standby:
                 nL = b'\x40'
@@ -109,6 +109,18 @@ class LabelPrinterManager:
             print(f"Sending 'Turn off paper removal standby' command: {gs + e_command + pL + pH + fn + a + nL + nH}")
             self.printer._raw(gs + e_command + pL + pH + fn + a + nL + nH)
             self.clear_label_data_buffer()
+
+            # Function 5 - 6: Set print speed
+            pL = b'\x04' # data length low byte
+            pH = b'\x00' # data length high byte
+            fn = b'\x05' # function code 5
+            a = b'\x06' # print speed setting (6)
+            nL = b'\x02' # 1 (slow) - 11 (fast). Need to go slow when using high-tack paper. 
+            nH = b'\x00' # high bit (unused)
+            print(f"Sending 'Set print speed' command: {gs + e_command + pL + pH + fn + a + nL + nH}")
+            self.printer._raw(gs + e_command + pL + pH + fn + a + nL + nH)
+            self.clear_label_data_buffer()
+
 
             # Function 2 - Close User Setting Mode 
             pL = b'\x04' # data length low byte
@@ -409,8 +421,21 @@ class LabelPrinterManager:
         print(f"Printing")
 
     def end_print_job(self):
+        self.feed_to_cut_position()
         self.printer.cut()
         self.printer.close()
+
+    def feed_to_cut_position(self):
+        fs = b'\x1C' # prefix for FS commands
+        l_command = b'\x28\x4C' # prefix for FS ( L commands
+
+        pL = b'\x02' # data length low byte
+        pH = b'\x00' # data length high byte
+        fn = b'\x42' # function code 66
+        m = b'\x30' # 48 = feed to cut position, 49 = same, but skips to next cut position if already at one 
+
+        print(f"Sending 'feed to cut position' command: {fs + l_command + pL + pH + fn + m}")
+        self.printer._raw(fs + l_command + pL + pH + fn + m)
 
     def print_logo(self):
         self.printer.image(LOGO_PATH,
