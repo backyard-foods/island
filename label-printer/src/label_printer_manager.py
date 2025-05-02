@@ -8,7 +8,7 @@ from utils import format_string
 
 FEEDBACK_URL = "https://goodbear.co/feedback"
 # ~270x50 PNG, black on transparent
-LOGO_PATH = "receipt-logo.png"
+LOGO_PATH = "label-logo.png"
 
 LOGO_FRAGMENT_HEIGHT = 20
 LOGO_SLEEP_BETWEEN_FRAGMENTS_MS = 0
@@ -449,7 +449,7 @@ class LabelPrinterManager:
     def print_heading(self, order):
         self.printer.ln(1)
         self.printer.set(align='center', double_height=True, double_width=True, bold=True, density=3)
-        self.printer.text(format_string(f"Order #: {str(order).title()}", True))
+        self.printer.text(format_string(f"{str(order).title()}", True))
         self.clear_label_data_buffer()
 
     def print_paid(self):
