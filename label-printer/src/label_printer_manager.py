@@ -367,6 +367,8 @@ class LabelPrinterManager:
                         print(f"Invalid item_total value: {item_total}")
                     finally:
                         self.print_gap()
+                else:
+                    self.print_gap()
 
                 if(upcs):
                     try:
@@ -375,7 +377,7 @@ class LabelPrinterManager:
                         print(f"Error: Invalid UPC format. Received: {upcs}")
                         upcs = []
 
-                if fulfillment and item and (len(upcs) <= 1 or paid):
+                if fulfillment and ((item and (len(upcs) <= 1 or paid)) or (not item)):
                     self.print_qr(fulfillment, item)
                 
                 if paid:
