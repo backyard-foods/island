@@ -9,7 +9,8 @@ from utils import format_string
 FEEDBACK_URL = "https://goodbear.co/feedback"
 # ~270x50 PNG, black on transparent
 LOGO_PATH = "label-logo.png"
-
+SMILEY_1_PATH = "label-happy-smiley.png"
+SMILEY_2_PATH = "label-tender-smiley.png"
 LOGO_FRAGMENT_HEIGHT = 20
 LOGO_SLEEP_BETWEEN_FRAGMENTS_MS = 0
 SLEEP_BETWEEN_SEGMENTS_MS = 50
@@ -388,6 +389,8 @@ class LabelPrinterManager:
                         if i < len(upcs) - 1:
                             self.print_gap()
                             
+                self.print_smileys()
+                
                 self.end_print_job()
                 
                 return True
@@ -441,6 +444,37 @@ class LabelPrinterManager:
 
     def print_logo(self):
         self.printer.image(LOGO_PATH,
+                           high_density_vertical=True, 
+                           high_density_horizontal=True, 
+                           impl='bitImageRaster', 
+                           fragment_height=LOGO_FRAGMENT_HEIGHT, 
+                           center=False)
+        self.clear_label_data_buffer()
+
+    def print_smileys(self):
+        self.printer.ln(2)
+        self.printer.image(SMILEY_1_PATH,
+                           high_density_vertical=True, 
+                           high_density_horizontal=True, 
+                           impl='bitImageRaster', 
+                           fragment_height=LOGO_FRAGMENT_HEIGHT, 
+                           center=False)
+        self.printer.ln(2)
+        self.printer.image(SMILEY_2_PATH,
+                           high_density_vertical=True, 
+                           high_density_horizontal=True, 
+                           impl='bitImageRaster', 
+                           fragment_height=LOGO_FRAGMENT_HEIGHT, 
+                           center=False)
+        self.printer.ln(2)
+        self.printer.image(SMILEY_1_PATH,
+                           high_density_vertical=True, 
+                           high_density_horizontal=True, 
+                           impl='bitImageRaster', 
+                           fragment_height=LOGO_FRAGMENT_HEIGHT, 
+                           center=False)
+        self.printer.ln(2)
+        self.printer.image(SMILEY_2_PATH,
                            high_density_vertical=True, 
                            high_density_horizontal=True, 
                            impl='bitImageRaster', 
