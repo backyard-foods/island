@@ -5,6 +5,8 @@ from escpos.exceptions import DeviceNotFoundError
 import threading
 import json
 from utils import format_string
+from datetime import datetime, timezone
+import pytz
 
 FEEDBACK_URL = "https://goodbear.co/feedback"
 # ~270x50 PNG, black on transparent
@@ -406,10 +408,11 @@ class LabelPrinterManager:
             self.throttle()
             try:
                 self.printer.open()
-                self.printer.ln(4)
+                self.printer.ln(1)
                 self.printer.set(align='center', double_height=True, double_width=True, bold=True, density=3)
-                self.printer.text(text)
-                self.printer.ln(4)
+                formatted_text = format_string(text, True)
+                self.printer.text(formatted_text)
+                self.printer.ln(2)
                 self.printer.set(align='center', normal_textsize=True)
                 self.printer.cut()
                 self.printer.close()
@@ -418,6 +421,49 @@ class LabelPrinterManager:
             except Exception as e:
                 print(f"Print text error: {str(e)}")
                 return False
+            
+    def print_inventory_label(self, item, print_date=False, print_time=False, quantity=2):
+        print(f"Printing inventory label: {item}")
+        
+        with self.lock:
+            try:
+                quantity = int(quantity)
+                if quantity < 1 or quantity > 10:
+                    print(f"Invalid quantity: {quantity}")
+                    return False
+                
+                et = pytz.timezone('US/Eastern')
+                now_et = datetime.now(et)
+                date_str = now_et.strftime("%m/%d/%Y")
+                time_str = now_et.strftime("%H:%M")
+
+                for i in range(quantity):
+                    self.throttle()
+                    self.printer.open()
+                    self.printer.ln(1)
+                    self.print_logo()
+                    self.printer.ln(1)
+                    self.clear_label_data_buffer()
+                    self.printer.set(align='center', normal_textsize=True)
+                    if print_date:
+                        print(f"Printing date: {date_str}")
+                        self.printer.text(format_string(date_str, True))
+                        self.printer.ln(1)
+                    if print_time:
+                        print(f"Printing time: {time_str}")
+                        self.printer.text(format_string(time_str, True))
+                        self.printer.ln(1)
+                    self.printer.set(align='center', double_height=True, double_width=True, bold=True, density=3)
+                    self.printer.text(format_string(item, True))
+                    self.printer.ln(3)
+                    self.printer.cut()
+                    self.printer.close()
+                
+                return True
+            except Exception as e:
+                print(f"Print inventory label error: {str(e)}")
+                return False
+                
             
     def start_print_job(self):
         self.printer.open()
@@ -513,7 +559,7 @@ class LabelPrinterManager:
 
         if not upc_str.isdigit() or len(upc_str) != 12:
             print(f"Error: Invalid UPC format. Received: {upc}")
-            self.print_message("Invalid UPC")
+            self.print_details("Invalid UPC")
             return
         
         #self.printer.ln(2)

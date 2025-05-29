@@ -1,5 +1,5 @@
 def format_string(string, double_size, flip=False):
-    char_limit = 21 if double_size else 38
+    char_limit = 15 if double_size else 25
     lines = []
     
     # Split the input string by newlines first
@@ -20,4 +20,5 @@ def format_string(string, double_size, flip=False):
     
     if flip:
         lines.reverse()
+
     return '\n'.join(lines)

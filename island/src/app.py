@@ -214,6 +214,25 @@ def print_text():
         print(f"Error sending label printer text print request: {str(e)}")
         return jsonify({"success": False})
 
+@app.route('/label/inventory')
+def print_inventory_label():
+    item = request.args.get('item')
+    print_date = request.args.get('print_date', 'false') == 'true'
+    print_time = request.args.get('print_time', 'false') == 'true'
+    quantity = request.args.get('quantity', 2)
+    try:
+        quantity = int(quantity)
+        if quantity < 1 or quantity > 10:
+            return jsonify({"success": False, "message": "Invalid quantity"})
+    except ValueError:
+        return jsonify({"success": False, "message": "Invalid quantity"})
+    try:
+        success = requests.get(f'http://label-printer:1234/inventory?item={item}&print_date={print_date}&print_time={print_time}&quantity={quantity}').json().get('success', False)
+        return jsonify({"success": success})
+    except requests.RequestException as e:
+        print(f"Error sending label printer inventory request: {str(e)}")
+        return jsonify({"success": False})
+    
 @app.route('/label/reload')
 def reload_label_paper():
     try:

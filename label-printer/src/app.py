@@ -42,6 +42,15 @@ def print_text():
     success = label_printer_manager.print_text(text)
     return jsonify({"success": success})
 
+@app.route('/inventory')
+def print_inventory_label():
+    item = request.args.get('item')
+    print_date = request.args.get('print_date', False)
+    print_time = request.args.get('print_time', False)
+    quantity = request.args.get('quantity', 2)
+    success = label_printer_manager.print_inventory_label(item, print_date, print_time, quantity)
+    return jsonify({"success": success})
+
 @app.route('/reload')
 def reload_label_paper():
     success = label_printer_manager.reload_paper()
