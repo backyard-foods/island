@@ -222,7 +222,7 @@ def print_inventory_label():
     quantity = request.args.get('quantity', 2)
     try:
         quantity = int(quantity)
-        if quantity < 1 or quantity > 10:
+        if quantity < 1 or quantity > 4:
             return jsonify({"success": False, "message": "Invalid quantity"})
     except ValueError:
         return jsonify({"success": False, "message": "Invalid quantity"})

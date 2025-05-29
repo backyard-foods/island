@@ -423,14 +423,19 @@ class LabelPrinterManager:
                 return False
             
     def print_inventory_label(self, item, print_date=False, print_time=False, quantity=2):
-        print(f"Printing inventory label: {item}")
+        print(f"Printing inventory label: {item} {print_date} {print_time} {quantity}")
         
         with self.lock:
             try:
                 quantity = int(quantity)
-                if quantity < 1 or quantity > 10:
+                if quantity < 1 or quantity > 4:
                     print(f"Invalid quantity: {quantity}")
                     return False
+                
+                if isinstance(print_date, str):
+                    print_date = print_date.lower() in ('true', '1', 'yes', 'on')
+                if isinstance(print_time, str):
+                    print_time = print_time.lower() in ('true', '1', 'yes', 'on')
                 
                 et = pytz.timezone('US/Eastern')
                 now_et = datetime.now(et)
