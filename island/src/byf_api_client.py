@@ -18,6 +18,7 @@ TOKEN_EXPIRY_BUFFER_S = 15
 TOKEN_EXPIRY_BUFFER_S_PROACTIVE = 600
 
 VIDEO_MONITORING_INTERVAL_M = 1.5
+VIDEO_MONITORING_ON = False
 
 class BYFAPIClient:
     def __init__(self):
@@ -293,7 +294,7 @@ class BYFAPIClient:
         while True:
             try:
                 self.get_state()
-                if self.last_video_monitoring_attempt and time.time() - self.last_video_monitoring_attempt > VIDEO_MONITORING_INTERVAL_M * 60:
+                if VIDEO_MONITORING_ON and self.last_video_monitoring_attempt and time.time() - self.last_video_monitoring_attempt > VIDEO_MONITORING_INTERVAL_M * 60:
                     self.start_video_monitoring()
             except Exception as e:
                 print(f"Error getting state: {e}")
