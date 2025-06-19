@@ -51,7 +51,13 @@ def detect_image(trigger):
     token = byf_client.get_access_token()
     response = requests.get(f'http://baywatch:1234/detect?token={token}&trigger={trigger}')
     return response
-    
+
+@app.route('/sound/success')
+def play_success_sound():
+    SUCCESS_SOUND.play()
+    print("Playing success sound...")
+    return jsonify({"success": True})
+
 @app.route('/receipt/status')
 def get_receipt_printer_status():
     try:
@@ -93,9 +99,8 @@ def print_receipt_async(order, upcs, details, message, wait):
 
 @app.route('/receipt/print')
 def print_receipt():
-    SUCCESS_SOUND.play()
-    print("Playing sound...")
-    
+    play_success_sound()
+
     image_error = False
     image_capture = 'trigger' in request.args
     if image_capture:
