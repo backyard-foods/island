@@ -26,3 +26,7 @@
 # SSH when running in Local Mode
 - Host OS: `balena ssh <device-IP-address>`
 - Container: `sudo balena ssh <device-IP-address> <container-name>`
+
+# ADB from Reaper
+- standard set of ADB keys should be copied into `reaper`'s working dir (`/usr/src/app`)
+- use `adb` commands from this directory to use keys which should already be recognized by tablets
