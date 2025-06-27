@@ -5,6 +5,7 @@ from utils import restart_service, start_service, stop_service, get_service_stat
 import requests
 import pygame
 import time
+from cachetools import TTLCache, cached
 
 app = Flask(__name__)
 
@@ -23,6 +24,9 @@ SERVICE_STOP_START_CHECK_INTERVAL_S = 1
 
 SUCCESS_SOUND = pygame.mixer.Sound('success2.wav')
 SUCCESS_SOUND.set_volume(1.0)
+
+print_receipt_cache = TTLCache(maxsize=100, ttl=1.5 * 60)
+print_label_cache = TTLCache(maxsize=100, ttl=0.25 * 60)
 
 print_receipt_lock = threading.Lock()
 print_label_lock = threading.Lock()
@@ -55,10 +59,13 @@ def detect_image(trigger):
     response = requests.get(f'http://baywatch:1234/detect?token={token}&trigger={trigger}')
     return response
 
-@app.route('/sound/success')
-def play_success_sound():
+def _play_success_sound():
     SUCCESS_SOUND.play()
     print("Playing success sound...")
+
+@app.route('/sound/success')
+def play_success_sound():
+    _play_success_sound()
     return jsonify({"success": True})
 
 @app.route('/receipt/status')
@@ -79,32 +86,35 @@ def configure_receipt_printer():
     restart_service("receipt-printer")
     return jsonify({"success": success})
 
+@cached(cache=print_receipt_cache)
+def print_receipt_cached(order, upcs, details, message, wait):
+    try:
+        _play_success_sound()
+        params = {
+            "order": order,
+            "upcs": upcs,
+            "details": details,
+            "message": message,
+            "wait": wait
+        }
+        response = requests.get("http://receipt-printer:1234/print", params=params)
+        response.raise_for_status()
+        success = response.json().get('success', False)
+        print(f"Receipt print success: {success}")
+        if success:
+            byf_client.notify_print_success(order)
+        return success
+    except Exception as e:
+        print(f"Error printing receipt: {str(e)}")
+        return False
+
 def print_receipt_async(order, upcs, details, message, wait):
     with print_receipt_lock:
-        try:
-            params = {
-                "order": order,
-                "upcs": upcs,
-                "details": details,
-                "message": message,
-                "wait": wait
-            }
-            response = requests.get("http://receipt-printer:1234/print", params=params)
-            response.raise_for_status()
-            success = response.json().get('success', False)
-            print(f"Receipt print success: {success}")
-            if success:
-                byf_client.notify_print_success(order)
-            return success
-        except Exception as e:
-            print(f"Error printing receipt: {str(e)}")
-            return False
+        return print_receipt_cached(order, upcs, details, message, wait)
 
 
 @app.route('/receipt/print')
 def print_receipt():
-    play_success_sound()
-
     image_error = False
     image_capture = 'trigger' in request.args
     if image_capture:
@@ -160,28 +170,35 @@ def configure_label_printer():
     restart_service("label-printer")
     return jsonify({"success": success})
 
+def _get_label_cache_key(order, item, upcs, item_number, item_total, fulfillment, paid):
+    return f"{order}-{item}-{item_number}-{item_total}-{fulfillment}-{paid}"
+
+@cached(cache=print_label_cache, key=_get_label_cache_key)
+def print_label_cached(order, item, upcs, item_number, item_total, fulfillment, paid):
+    try:
+        params = {
+            "order": order,
+            "item": item,
+            "upcs": upcs,
+            "item_number": item_number,
+            "item_total": item_total,
+            "fulfillment": fulfillment,
+            "paid": paid
+        }
+        response = requests.get("http://label-printer:1234/print", params=params)
+        response.raise_for_status()
+        success = response.json().get('success', False)
+        print(f"Label print success: {success}")
+        if fulfillment and success:
+            byf_client.notify_label_success(fulfillment)
+        return success
+    except Exception as e:
+        print(f"Error printing label: {str(e)}")
+        return False
+
 def print_label_async(order, item, upcs, item_number, item_total, fulfillment, paid):
     with print_label_lock:
-        try:
-            params = {
-                "order": order,
-                "item": item,
-                "upcs": upcs,
-                "item_number": item_number,
-                "item_total": item_total,
-                "fulfillment": fulfillment,
-                "paid": paid
-            }
-            response = requests.get("http://label-printer:1234/print", params=params)
-            response.raise_for_status()
-            success = response.json().get('success', False)
-            print(f"Label print success: {success}")
-            if fulfillment and success:
-                byf_client.notify_label_success(fulfillment)
-            return success
-        except Exception as e:
-            print(f"Error printing label: {str(e)}")
-            return False
+        return print_label_cached(order, item, upcs, item_number, item_total, fulfillment, paid)
 
 @app.route('/label/print')
 def print_label():
