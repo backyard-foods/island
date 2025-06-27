@@ -5,7 +5,6 @@ import threading
 import json
 import os
 from utils import format_string
-from cachetools import TTLCache, cached
 
 # ~270x50 PNG, black on transparent
 LOGO_PATH = "receipt-logo.png"
@@ -349,7 +348,6 @@ class ReceiptPrinterManager:
         else:
             self.cooldown = POLL_COOLDOWN
 
-    @cached(cache=TTLCache(maxsize=100, ttl=1 * 60))
     def print_receipt(self, order, upcs, details, message, wait):
         print(f"Printing receipt for order: {order}, upcs: {upcs}, details: {details}, message: {message}, wait: {wait}")
         with self.lock:
