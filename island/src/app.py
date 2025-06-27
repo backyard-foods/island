@@ -24,6 +24,9 @@ SERVICE_STOP_START_CHECK_INTERVAL_S = 1
 SUCCESS_SOUND = pygame.mixer.Sound('success2.wav')
 SUCCESS_SOUND.set_volume(1.0)
 
+print_receipt_lock = threading.Lock()
+print_label_lock = threading.Lock()
+
 def capture_image(trigger):
     try:
         print(f"Sending capture request to baywatch with trigger: {trigger}")
@@ -77,24 +80,25 @@ def configure_receipt_printer():
     return jsonify({"success": success})
 
 def print_receipt_async(order, upcs, details, message, wait):
-    try:
-        params = {
-            "order": order,
-            "upcs": upcs,
-            "details": details,
-            "message": message,
-            "wait": wait
-        }
-        response = requests.get("http://receipt-printer:1234/print", params=params)
-        response.raise_for_status()
-        success = response.json().get('success', False)
-        print(f"Receipt print success: {success}")
-        if success:
-            byf_client.notify_print_success(order)
-        return success
-    except Exception as e:
-        print(f"Error printing receipt: {str(e)}")
-        return False
+    with print_receipt_lock:
+        try:
+            params = {
+                "order": order,
+                "upcs": upcs,
+                "details": details,
+                "message": message,
+                "wait": wait
+            }
+            response = requests.get("http://receipt-printer:1234/print", params=params)
+            response.raise_for_status()
+            success = response.json().get('success', False)
+            print(f"Receipt print success: {success}")
+            if success:
+                byf_client.notify_print_success(order)
+            return success
+        except Exception as e:
+            print(f"Error printing receipt: {str(e)}")
+            return False
 
 
 @app.route('/receipt/print')
@@ -157,26 +161,27 @@ def configure_label_printer():
     return jsonify({"success": success})
 
 def print_label_async(order, item, upcs, item_number, item_total, fulfillment, paid):
-    try:
-        params = {
-            "order": order,
-            "item": item,
-            "upcs": upcs,
-            "item_number": item_number,
-            "item_total": item_total,
-            "fulfillment": fulfillment,
-            "paid": paid
-        }
-        response = requests.get("http://label-printer:1234/print", params=params)
-        response.raise_for_status()
-        success = response.json().get('success', False)
-        print(f"Label print success: {success}")
-        if fulfillment and success:
-            byf_client.notify_label_success(fulfillment)
-        return success
-    except Exception as e:
-        print(f"Error printing label: {str(e)}")
-        return False
+    with print_label_lock:
+        try:
+            params = {
+                "order": order,
+                "item": item,
+                "upcs": upcs,
+                "item_number": item_number,
+                "item_total": item_total,
+                "fulfillment": fulfillment,
+                "paid": paid
+            }
+            response = requests.get("http://label-printer:1234/print", params=params)
+            response.raise_for_status()
+            success = response.json().get('success', False)
+            print(f"Label print success: {success}")
+            if fulfillment and success:
+                byf_client.notify_label_success(fulfillment)
+            return success
+        except Exception as e:
+            print(f"Error printing label: {str(e)}")
+            return False
 
 @app.route('/label/print')
 def print_label():
