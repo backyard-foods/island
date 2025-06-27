@@ -28,5 +28,4 @@
 - Container: `sudo balena ssh <device-IP-address> <container-name>`
 
 # ADB from Reaper
-- standard set of ADB keys should be copied into `reaper`'s working dir (`/usr/src/app`)
-- use `adb` commands from this directory to use keys which should already be recognized by tablets
+- ToDo: figure out how to use standardized keys that persist between builds so we don't have to keep re-authing with the kiosk tablet
