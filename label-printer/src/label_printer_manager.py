@@ -7,6 +7,7 @@ import json
 from utils import format_string
 from datetime import datetime, timezone
 import pytz
+from cachetools import TTLCache, cached
 
 FEEDBACK_URL = "https://goodbear.co/feedback"
 # ~270x50 PNG, black on transparent
@@ -344,6 +345,7 @@ class LabelPrinterManager:
         else:
             self.cooldown = POLL_COOLDOWN
 
+    @cached(cache=TTLCache(maxsize=100, ttl=1 * 60))
     def print_label(self, order, item, upcs, item_number, item_total, fulfillment=None, paid=False):
         with self.lock:
             print(f"acquired lock")
