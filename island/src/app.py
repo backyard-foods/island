@@ -26,7 +26,7 @@ SUCCESS_SOUND = pygame.mixer.Sound('success2.wav')
 SUCCESS_SOUND.set_volume(1.0)
 
 print_receipt_cache = TTLCache(maxsize=100, ttl=45)
-print_label_cache = TTLCache(maxsize=100, ttl=10)
+print_label_cache = TTLCache(maxsize=100, ttl=5)
 
 print_receipt_lock = threading.Lock()
 print_label_lock = threading.Lock()
