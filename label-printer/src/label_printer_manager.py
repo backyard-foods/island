@@ -380,8 +380,8 @@ class LabelPrinterManager:
                         print(f"Error: Invalid UPC format. Received: {upcs}")
                         upcs = []
 
-                if fulfillment and ((item and (len(upcs) <= 1 or paid)) or (not item)):
-                    self.print_qr(fulfillment, item)
+                #if fulfillment and ((item and (len(upcs) <= 1 or paid)) or (not item)):
+                    #self.print_qr(fulfillment, item)
                 
                 if paid:
                     self.print_paid()
