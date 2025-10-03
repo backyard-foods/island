@@ -4,6 +4,7 @@
 - `wave`: manages music
 - `label-printer`: manages chit printer
 - `receipt-printer`: manages customer receipt printer
+- `baywatch`: manages security camera
 - `reaper`: manages daily reboots and reboots in case of connectivity failures
 
 # Local dev
