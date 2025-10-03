@@ -1,3 +1,11 @@
+# Application containers:
+- `island`: main flask server, manages comms with backend, temperature sensors (TODO: move to separate container)
+- `porchlight`: manages lights over GPIO
+- `wave`: manages music
+- `label-printer`: manages chit printer
+- `receipt-printer`: manages customer receipt printer
+- `reaper`: manages daily reboots and reboots in case of connectivity failures
+
 # Local dev
 - Install [Balena CLI](https://docs.balena.io/learn/getting-started/raspberrypi4-64/nodejs/)
 - Turn on `Local mode` in the [Balena dashboard](https://dashboard.balena-cloud.com/devices)
@@ -28,4 +36,4 @@
 - Container: `sudo balena ssh <device-IP-address> <container-name>`
 
 # ADB from Reaper
-- ToDo: figure out how to use standardized keys that persist between builds so we don't have to keep re-authing with the kiosk tablet
+- TODO: figure out how to use standardized keys that persist between builds so we don't have to keep re-authing with the kiosk tablet
